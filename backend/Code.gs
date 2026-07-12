@@ -296,16 +296,15 @@ function setupTriggers() {
 
 // Trigger wrapper functions (must be top-level, no parameters)
 function triggerDueLoanAlerts() {
-  // Use a system token concept — triggers run as the script owner
-  var adminUsers = firestoreQuery_('users', [{ field: 'role', op: '==', value: 'super_admin' }]);
-  if (adminUsers.length === 0) return;
-  sendDueLoanAlerts({ token: 'SYSTEM_TRIGGER', _bypassAuth: true });
+  // Triggers run as the script owner — bypass client auth entirely
+  sendDueLoanAlerts({ _systemTrigger: true });
 }
 
 function triggerContributionReminders() {
-  sendContributionReminders({ token: 'SYSTEM_TRIGGER', _bypassAuth: true });
+  sendContributionReminders({ _systemTrigger: true });
 }
 
 function triggerBirthdayNotifications() {
-  sendBirthdayNotifications({ token: 'SYSTEM_TRIGGER', _bypassAuth: true });
+  sendBirthdayNotifications({ _systemTrigger: true });
 }
+

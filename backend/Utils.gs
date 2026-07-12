@@ -71,16 +71,19 @@ function getNextCounter_(key) {
 }
 
 /**
- * Generates a secure random session token (UUID v4 style).
- * @returns {string}
+ * Generates a secure session token using SHA-256 over a UUID + timestamp + server secret.
+ * Significantly stronger than Math.random() which is not a CSPRNG.
+ * @returns {string} 64-character hex string.
  */
 function generateToken() {
-  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  var token = '';
-  for (var i = 0; i < 64; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return token + '_' + Date.now();
+  var uuid = generateUUID();
+  var ts   = Date.now();
+  var salt = PropertiesService.getScriptProperties().getProperty('PASSWORD_SALT') || 'COOP_SALT_2024';
+  var raw  = uuid + '_' + ts + '_' + salt + '_' + generateUUID();
+  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, raw);
+  return digest.map(function(b) {
+    return ('0' + (b & 0xFF).toString(16)).slice(-2);
+  }).join('');
 }
 
 /**

@@ -272,8 +272,10 @@ function getRepaymentStats(params) {
  */
 function sendDueLoanAlerts(params) {
   try {
-    var auth = authorise_(params.token, 'manage_notifications');
-    if (auth.error) return auth.error;
+    if (!params._systemTrigger) {
+      var auth = authorise_(params.token, 'manage_notifications');
+      if (auth.error) return auth.error;
+    }
 
     var alertDays = parseInt(getSetting('dueLoanAlertDaysBefore') || 7, 10);
     var today = new Date();

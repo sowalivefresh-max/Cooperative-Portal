@@ -221,8 +221,10 @@ function getUnreadNotificationCount(params) {
  */
 function sendBirthdayNotifications(params) {
   try {
-    var auth = authorise_(params.token, 'manage_notifications');
-    if (auth.error) return auth.error;
+    if (!params._systemTrigger) {
+      var auth = authorise_(params.token, 'manage_notifications');
+      if (auth.error) return auth.error;
+    }
 
     if (!getSetting('enableBirthdayNotifications')) return successResponse(null, 'Birthday notifications are disabled.');
 
@@ -268,8 +270,10 @@ function sendBirthdayNotifications(params) {
  */
 function sendContributionReminders(params) {
   try {
-    var auth = authorise_(params.token, 'manage_notifications');
-    if (auth.error) return auth.error;
+    if (!params._systemTrigger) {
+      var auth = authorise_(params.token, 'manage_notifications');
+      if (auth.error) return auth.error;
+    }
 
     if (!getSetting('enableContributionReminders')) {
       return successResponse(null, 'Contribution reminders are disabled.');

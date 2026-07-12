@@ -481,6 +481,280 @@
   </div>
 </div>
 
+<!-- ── RECORD CONTRIBUTION MODAL ─────────────────────────────────────────── -->
+<div class="modal-backdrop-coop" id="addContribModal" style="display:none">
+  <div class="modal-box" style="max-width:520px">
+    <div class="modal-header-coop">
+      <span style="font-size:22px">💵</span>
+      <div class="modal-title-coop">Record Contribution</div>
+      <button class="modal-close" onclick="COOP.modal.close('addContribModal')">✕</button>
+    </div>
+    <div class="modal-body-coop">
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Member ID / Number *</label>
+        <input type="text" id="ctb_memberId" class="form-control" placeholder="e.g. MBR-00001">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group">
+          <label class="form-label">Contribution Type *</label>
+          <select id="ctb_type" class="form-control form-select">
+            <option value="Monthly">Monthly</option>
+            <option value="Special">Special</option>
+            <option value="Voluntary">Voluntary</option>
+            <option value="Emergency">Emergency</option>
+            <option value="Fixed">Fixed</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Period (Month) *</label>
+          <input type="month" id="ctb_month" class="form-control">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group">
+          <label class="form-label">Amount (₦) *</label>
+          <input type="number" id="ctb_amount" class="form-control" placeholder="0.00" min="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Method *</label>
+          <select id="ctb_method" class="form-control form-select">
+            <option value="Cash">Cash</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+            <option value="Cheque">Cheque</option>
+            <option value="Online">Online</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group">
+          <label class="form-label">Payment Date *</label>
+          <input type="date" id="ctb_date" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reference No.</label>
+          <input type="text" id="ctb_ref" class="form-control" placeholder="Optional">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea id="ctb_notes" class="form-control" rows="2" style="resize:vertical"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer-coop">
+      <button class="btn-outline-coop" onclick="COOP.modal.close('addContribModal')">Cancel</button>
+      <button class="btn-primary-coop" id="saveContribBtn" onclick="submitContribution()">💾 Record Contribution</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── APPLY FOR LOAN MODAL ──────────────────────────────────────────────── -->
+<div class="modal-backdrop-coop" id="applyLoanModal" style="display:none">
+  <div class="modal-box" style="max-width:560px">
+    <div class="modal-header-coop">
+      <span style="font-size:22px">📋</span>
+      <div class="modal-title-coop">New Loan Application</div>
+      <button class="modal-close" onclick="COOP.modal.close('applyLoanModal')">✕</button>
+    </div>
+    <div class="modal-body-coop">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group">
+          <label class="form-label">Member ID *</label>
+          <input type="text" id="ln_memberId" class="form-control" placeholder="e.g. MBR-00001">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Loan Product *</label>
+          <select id="ln_product" class="form-control form-select">
+            <option value="">Loading products…</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group">
+          <label class="form-label">Requested Amount (₦) *</label>
+          <input type="number" id="ln_amount" class="form-control" placeholder="0.00" min="1000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duration (months) *</label>
+          <input type="number" id="ln_duration" class="form-control" placeholder="e.g. 12" min="1" max="60">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Purpose *</label>
+        <textarea id="ln_purpose" class="form-control" rows="2" placeholder="Reason for loan…" style="resize:vertical"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Repayment Frequency</label>
+        <select id="ln_frequency" class="form-control form-select">
+          <option value="Monthly">Monthly</option>
+          <option value="Quarterly">Quarterly</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer-coop">
+      <button class="btn-outline-coop" onclick="COOP.modal.close('applyLoanModal')">Cancel</button>
+      <button class="btn-primary-coop" id="saveLoanBtn" onclick="submitLoanApplication()">📋 Submit Application</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── RECORD SAVINGS DEPOSIT MODAL ─────────────────────────────────────── -->
+<div class="modal-backdrop-coop" id="depositModal" style="display:none">
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-header-coop">
+      <span style="font-size:22px">🏦</span>
+      <div class="modal-title-coop">Record Savings Deposit</div>
+      <button class="modal-close" onclick="COOP.modal.close('depositModal')">✕</button>
+    </div>
+    <div class="modal-body-coop">
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Member ID *</label>
+        <input type="text" id="dep_memberId" class="form-control" placeholder="e.g. MBR-00001">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group">
+          <label class="form-label">Amount (₦) *</label>
+          <input type="number" id="dep_amount" class="form-control" placeholder="0.00" min="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Method *</label>
+          <select id="dep_method" class="form-control form-select">
+            <option value="Cash">Cash</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+            <option value="Cheque">Cheque</option>
+            <option value="Online">Online</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group">
+          <label class="form-label">Transaction Date *</label>
+          <input type="date" id="dep_date" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reference No.</label>
+          <input type="text" id="dep_ref" class="form-control" placeholder="Optional">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea id="dep_notes" class="form-control" rows="2" style="resize:vertical"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer-coop">
+      <button class="btn-outline-coop" onclick="COOP.modal.close('depositModal')">Cancel</button>
+      <button class="btn-primary-coop" id="saveDepositBtn" onclick="submitDeposit()">💾 Record Deposit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── RECORD REPAYMENT MODAL ────────────────────────────────────────────── -->
+<div class="modal-backdrop-coop" id="repaymentModal" style="display:none">
+  <div class="modal-box" style="max-width:500px">
+    <div class="modal-header-coop">
+      <span style="font-size:22px">💳</span>
+      <div class="modal-title-coop">Record Loan Repayment</div>
+      <button class="modal-close" onclick="COOP.modal.close('repaymentModal')">✕</button>
+    </div>
+    <div class="modal-body-coop">
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Loan Number *</label>
+        <input type="text" id="rep_loanNumber" class="form-control" placeholder="e.g. LN-00001">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group">
+          <label class="form-label">Amount Paid (₦) *</label>
+          <input type="number" id="rep_amount" class="form-control" placeholder="0.00" min="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Penalty (₦)</label>
+          <input type="number" id="rep_penalty" class="form-control" placeholder="0.00" min="0" value="0">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group">
+          <label class="form-label">Payment Method *</label>
+          <select id="rep_method" class="form-control form-select">
+            <option value="Cash">Cash</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+            <option value="Cheque">Cheque</option>
+            <option value="Online">Online</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Date *</label>
+          <input type="date" id="rep_date" class="form-control">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea id="rep_notes" class="form-control" rows="2" style="resize:vertical"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer-coop">
+      <button class="btn-outline-coop" onclick="COOP.modal.close('repaymentModal')">Cancel</button>
+      <button class="btn-primary-coop" id="saveRepayBtn" onclick="submitRepayment()">💾 Record Repayment</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CREATE USER ACCOUNT MODAL ─────────────────────────────────────────── -->
+<div class="modal-backdrop-coop" id="createUserModal" style="display:none">
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-header-coop">
+      <span style="font-size:22px">🔐</span>
+      <div class="modal-title-coop">Create User Account</div>
+      <button class="modal-close" onclick="COOP.modal.close('createUserModal')">✕</button>
+    </div>
+    <div class="modal-body-coop">
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Full Name *</label>
+        <input type="text" id="usr_fullName" class="form-control" placeholder="Staff member's full name">
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Email Address *</label>
+        <input type="email" id="usr_email" class="form-control" placeholder="user@example.com">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group">
+          <label class="form-label">Role *</label>
+          <select id="usr_role" class="form-control form-select">
+            <option value="admin">Admin</option>
+            <option value="accountant">Accountant</option>
+            <option value="loan_officer">Loan Officer</option>
+            <option value="auditor">Auditor</option>
+            <option value="member">Member (Portal Access)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Member ID (if member)</label>
+          <input type="text" id="usr_memberId" class="form-control" placeholder="MBR-00001">
+        </div>
+      </div>
+      <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:12px;font-size:12px;color:var(--text-secondary)">
+        ℹ️ A temporary password will be auto-generated and must be changed on first login.
+      </div>
+    </div>
+    <div class="modal-footer-coop">
+      <button class="btn-outline-coop" onclick="COOP.modal.close('createUserModal')">Cancel</button>
+      <button class="btn-primary-coop" id="saveUserBtn" onclick="submitCreateUser()">🔐 Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MEMBER PROFILE MODAL ───────────────────────────────────────────────── -->
+<div class="modal-backdrop-coop" id="memberProfileModal" style="display:none">
+  <div class="modal-box large" style="max-width:700px">
+    <div class="modal-header-coop">
+      <span style="font-size:22px">👤</span>
+      <div class="modal-title-coop">Member Profile</div>
+      <button class="modal-close" onclick="COOP.modal.close('memberProfileModal')">✕</button>
+    </div>
+    <div class="modal-body-coop" id="memberProfileContent" style="max-height:70vh;overflow-y:auto">
+      <div class="empty-state"><div class="page-loader-ring"></div></div>
+    </div>
+  </div>
+</div>
+
 <script src="../js/config.js"></script>
   <script src="../js/coop.js"></script>
 <script>
@@ -1401,15 +1675,170 @@
 
   // ── Modals ────────────────────────────────────────────────────────────────
   function openAddMemberModal() {
+    // Navigate to members page then open the registration modal
     showPage('members');
-    COOP.toast.info('Use the Members page to register a new member.');
+    // Wait for the page to render then open the modal
+    setTimeout(function() { openMemberRegModal(); }, 100);
   }
   function openEditMemberModal(memberId) { COOP.toast.info('Edit member ' + memberId + ' — form coming soon.'); }
-  function openAddContribModal() { COOP.toast.info('Record contribution — modal coming soon.'); }
-  function openApplyLoanModal() { COOP.toast.info('New loan application — modal coming soon.'); }
-  function openDepositModal() { COOP.toast.info('Record savings deposit — modal coming soon.'); }
-  function openRepaymentModal() { COOP.toast.info('Record repayment — modal coming soon.'); }
-  function openCreateUserModal() { COOP.toast.info('Create user — modal coming soon.'); }
+
+  // ── Contribution Modal ───────────────────────────────────────────────────
+  function openAddContribModal() {
+    document.getElementById('ctb_month').value = new Date().toISOString().slice(0,7);
+    document.getElementById('ctb_date').value  = new Date().toISOString().slice(0,10);
+    COOP.modal.open('addContribModal');
+  }
+  function submitContribution() {
+    var memberId = document.getElementById('ctb_memberId').value.trim();
+    var type     = document.getElementById('ctb_type').value;
+    var month    = document.getElementById('ctb_month').value;
+    var amount   = parseFloat(document.getElementById('ctb_amount').value);
+    var method   = document.getElementById('ctb_method').value;
+    var date     = document.getElementById('ctb_date').value;
+    if (!memberId || !month || isNaN(amount) || amount <= 0 || !date) {
+      COOP.toast.warning('Please fill all required fields.'); return;
+    }
+    var btn = document.getElementById('saveContribBtn');
+    btn.disabled = true;
+    COOP.api('addContribution', {
+      memberId: memberId, type: type, month: month,
+      amount: amount, paymentMethod: method, paymentDate: date,
+      notes: document.getElementById('ctb_notes').value
+    }, function(err, data) {
+      btn.disabled = false;
+      if (err) { COOP.toast.error(err); return; }
+      COOP.modal.close('addContribModal');
+      COOP.toast.success('Contribution recorded! Receipt: ' + (data ? data.receiptNumber : ''));
+      if (_currentPage === 'contributions') loadContributions(_contribPage);
+      if (_currentPage === 'dashboard') loadDashboard();
+    });
+  }
+
+  // ── Loan Application Modal ───────────────────────────────────────────────
+  function openApplyLoanModal() {
+    // Load loan products into dropdown
+    COOP.api('getLoanProducts', {}, function(err, products) {
+      var sel = document.getElementById('ln_product');
+      if (!err && products && products.length > 0) {
+        sel.innerHTML = products.map(function(p) {
+          return '<option value="' + COOP.escHtml(p.name) + '">' + COOP.escHtml(p.name) +
+                 ' (' + (p.interestRate || 0) + '% / mo)</option>';
+        }).join('');
+      } else {
+        sel.innerHTML = '<option value="Emergency Loan">Emergency Loan</option>' +
+                        '<option value="Regular Loan">Regular Loan</option>';
+      }
+    });
+    COOP.modal.open('applyLoanModal');
+  }
+  function submitLoanApplication() {
+    var memberId = document.getElementById('ln_memberId').value.trim();
+    var product  = document.getElementById('ln_product').value;
+    var amount   = parseFloat(document.getElementById('ln_amount').value);
+    var duration = parseInt(document.getElementById('ln_duration').value, 10);
+    var purpose  = document.getElementById('ln_purpose').value.trim();
+    if (!memberId || !product || isNaN(amount) || amount <= 0 || isNaN(duration) || !purpose) {
+      COOP.toast.warning('Please fill all required fields.'); return;
+    }
+    var btn = document.getElementById('saveLoanBtn');
+    btn.disabled = true;
+    COOP.api('applyForLoan', {
+      memberId: memberId, productType: product, requestedAmount: amount,
+      duration: duration, purpose: purpose,
+      repaymentFrequency: document.getElementById('ln_frequency').value
+    }, function(err, data) {
+      btn.disabled = false;
+      if (err) { COOP.toast.error(err); return; }
+      COOP.modal.close('applyLoanModal');
+      COOP.toast.success('Loan application submitted! Loan No: ' + (data ? data.loanNumber : ''));
+      if (_currentPage === 'loans') loadLoans(_loanPage);
+    });
+  }
+
+  // ── Savings Deposit Modal ────────────────────────────────────────────────
+  function openDepositModal() {
+    document.getElementById('dep_date').value = new Date().toISOString().slice(0,10);
+    COOP.modal.open('depositModal');
+  }
+  function submitDeposit() {
+    var memberId = document.getElementById('dep_memberId').value.trim();
+    var amount   = parseFloat(document.getElementById('dep_amount').value);
+    var method   = document.getElementById('dep_method').value;
+    var date     = document.getElementById('dep_date').value;
+    if (!memberId || isNaN(amount) || amount <= 0 || !date) {
+      COOP.toast.warning('Please fill all required fields.'); return;
+    }
+    var btn = document.getElementById('saveDepositBtn');
+    btn.disabled = true;
+    COOP.api('depositSavings', {
+      memberId: memberId, amount: amount, paymentMethod: method,
+      transactionDate: date, reference: document.getElementById('dep_ref').value,
+      notes: document.getElementById('dep_notes').value
+    }, function(err, data) {
+      btn.disabled = false;
+      if (err) { COOP.toast.error(err); return; }
+      COOP.modal.close('depositModal');
+      COOP.toast.success('Deposit recorded! New balance: ' + COOP.fmt.currency(data ? data.newBalance : 0));
+      if (_currentPage === 'savings') loadSavings(_savingsPage);
+    });
+  }
+
+  // ── Repayment Modal ──────────────────────────────────────────────────────
+  function openRepaymentModal() {
+    document.getElementById('rep_date').value = new Date().toISOString().slice(0,10);
+    COOP.modal.open('repaymentModal');
+  }
+  function submitRepayment() {
+    var loanNumber = document.getElementById('rep_loanNumber').value.trim();
+    var amount     = parseFloat(document.getElementById('rep_amount').value);
+    var penalty    = parseFloat(document.getElementById('rep_penalty').value) || 0;
+    var method     = document.getElementById('rep_method').value;
+    var date       = document.getElementById('rep_date').value;
+    if (!loanNumber || isNaN(amount) || amount <= 0 || !date) {
+      COOP.toast.warning('Please fill all required fields.'); return;
+    }
+    var btn = document.getElementById('saveRepayBtn');
+    btn.disabled = true;
+    COOP.api('recordRepayment', {
+      loanNumber: loanNumber, amountPaid: amount, penalty: penalty,
+      paymentMethod: method, paymentDate: date,
+      notes: document.getElementById('rep_notes').value
+    }, function(err, data) {
+      btn.disabled = false;
+      if (err) { COOP.toast.error(err); return; }
+      COOP.modal.close('repaymentModal');
+      COOP.toast.success('Repayment recorded! Receipt: ' + (data ? data.receiptNumber : ''));
+      if (_currentPage === 'repayments') loadRepayments(_repayPage);
+    });
+  }
+
+  // ── Create User Modal ────────────────────────────────────────────────────
+  function openCreateUserModal() {
+    document.getElementById('usr_fullName').value = '';
+    document.getElementById('usr_email').value = '';
+    document.getElementById('usr_memberId').value = '';
+    COOP.modal.open('createUserModal');
+  }
+  function submitCreateUser() {
+    var fullName = document.getElementById('usr_fullName').value.trim();
+    var email    = document.getElementById('usr_email').value.trim();
+    var role     = document.getElementById('usr_role').value;
+    var memberId = document.getElementById('usr_memberId').value.trim();
+    if (!fullName || !email) { COOP.toast.warning('Full name and email are required.'); return; }
+    var btn = document.getElementById('saveUserBtn');
+    btn.disabled = true;
+    COOP.api('createUser', {
+      fullName: fullName, email: email, role: role,
+      memberId: memberId || null
+    }, function(err, data) {
+      btn.disabled = false;
+      if (err) { COOP.toast.error(err); return; }
+      COOP.modal.close('createUserModal');
+      COOP.toast.success('User created! Temp password: ' + (data ? data.tempPassword : ''));
+      loadUsers();
+    });
+  }
+
   function viewLoanDetail(loanNumber) { COOP.toast.info('Viewing loan ' + loanNumber); }
 
   function openAnnouncementModal() { COOP.modal.open('announcementModal'); }
