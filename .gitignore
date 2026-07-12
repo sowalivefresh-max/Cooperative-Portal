@@ -1,0 +1,24 @@
+# .gitignore — Cooperative Society Management Portal
+
+# ── Backend ──────────────────────────────────────────────────────────────────
+# clasp credentials (contains your Google OAuth token — NEVER commit this)
+.clasprc.json
+backend/.clasp.json
+
+# ── Frontend ─────────────────────────────────────────────────────────────────
+# Do NOT ignore config.js (it should only contain the GAS URL — no secrets)
+# If you add sensitive values to config.js in future, add it here.
+
+# ── OS / Editor ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp
+*.swo
+
+# ── Legacy GAS template files (no longer needed in the frontend) ──────────────
+# These remain in the root directory for reference but are not part of the
+# static frontend. They are superseded by frontend/ versions.
+# Uncomment below if you want to exclude them from Git tracking:
+# *.html
+# *.gs
