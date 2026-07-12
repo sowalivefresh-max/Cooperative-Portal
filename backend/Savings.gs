@@ -105,7 +105,7 @@ function depositSavings(params) {
     if (isNaN(amount) || amount <= 0) return errorResponse('Invalid amount.', 400);
 
     var receiptNumber = generateReceiptNumber();
-    updateSavingsBalance_(params.memberId, amount, 'credit');
+    var newBalance = updateSavingsBalance_(params.memberId, amount, 'credit');
 
     recordTransaction_({
       memberId:    params.memberId,
@@ -115,13 +115,13 @@ function depositSavings(params) {
       amount:      amount,
       reference:   receiptNumber,
       description: 'Savings Deposit — ' + (params.notes || params.paymentMethod),
-      date:        params.paymentDate,
+      date:        params.paymentDate || new Date().toISOString(),
       recordedBy:  auth.session.userId
     });
 
     logAction_('DEPOSIT_SAVINGS', 'Savings', auth.session.userId, 'SAV-' + params.memberId,
                null, { amount: amount });
-    return successResponse({ receiptNumber: receiptNumber }, 'Savings deposit recorded.');
+    return successResponse({ receiptNumber: receiptNumber, newBalance: newBalance }, 'Savings deposit recorded.');
   } catch (e) {
     logError('Savings', 'depositSavings', e);
     return errorResponse('Failed to record savings deposit.', 500);
