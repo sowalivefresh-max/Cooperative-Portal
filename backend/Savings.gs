@@ -225,42 +225,76 @@ function applyQuarterlySavingsInterest(params) {
       return errorResponse('Only administrators can apply interest.', 403);
     }
 
-    var annualRate = parseFloat(getSetting('savingsInterestRate') || 3);
-    var quarterlyRate = annualRate / 4; // Approximate quarterly rate
-    var allSavings = firestoreGetAll_('savings');
-    var applied = 0;
+    var annualRate    = parseFloat(getSetting('savingsInterestRate') || 3);
+    var quarterlyRate = annualRate / 4;
+    var allSavings    = firestoreGetAll_('savings');
+    var now           = new Date().toISOString();
+
+    // Pre-fetch all active members once — avoids N individual Firestore reads
+    var activeMembers = firestoreQuery_('members', [{ field: 'status', op: '==', value: 'Active' }]);
+    var memberMap     = {};
+    activeMembers.forEach(function(m) { memberMap[m.memberNumber || m._id] = m; });
+
+    var batchWrites     = [];
+    var memberBatch     = [];
+    var transactionDocs = [];
+    var applied         = 0;
 
     allSavings.forEach(function(sav) {
       if (!sav.memberId || (sav.currentBalance || 0) <= 0) return;
-      var member = firestoreGet_('members', sav.memberId);
-      if (!member || member.status !== 'Active') return;
+      var member = memberMap[sav.memberId];
+      if (!member) return;
 
-      var interest = (sav.currentBalance * (quarterlyRate / 100));
-      interest = Math.round(interest * 100) / 100;
+      var interest   = Math.round(sav.currentBalance * (quarterlyRate / 100) * 100) / 100;
+      var newBalance = (sav.currentBalance || 0) + interest;
 
-      firestoreUpdate_('savings', sav._id, {
-        interestAccrued:  (sav.interestAccrued || 0) + interest,
-        currentBalance:   (sav.currentBalance || 0) + interest,
-        lastInterestDate: new Date().toISOString(),
-        updatedAt:        new Date().toISOString()
+      // Queue savings update
+      batchWrites.push({
+        type: 'update', collection: 'savings', docId: sav._id,
+        data: {
+          interestAccrued:  (sav.interestAccrued || 0) + interest,
+          currentBalance:   newBalance,
+          lastInterestDate: now,
+          updatedAt:        now
+        }
       });
 
-      recordTransaction_({
+      // Queue member savings sync
+      memberBatch.push({
+        type: 'update', collection: 'members', docId: sav.memberId,
+        data: { totalSavings: newBalance, currentBalance: newBalance, updatedAt: now }
+      });
+
+      // Collect transaction records to write individually after
+      transactionDocs.push({
         memberId:    sav.memberId,
         memberName:  member.fullName,
         type:        'Credit',
         category:    'Interest',
         amount:      interest,
         reference:   'SAV-' + sav.memberId,
-        description: 'Quarterly Savings Interest (' + quarterlyRate.toFixed(2) + '% on ' + formatCurrency(sav.currentBalance) + ')',
-        date:        new Date().toISOString(),
-        recordedBy:  auth.session.userId
+        description: 'Quarterly Savings Interest (' + quarterlyRate.toFixed(2) + '% on ' +
+                     formatCurrency(sav.currentBalance) + ')',
+        date:        now,
+        recordedBy:  auth.session ? auth.session.userId : 'system'
       });
 
       applied++;
     });
 
-    logAction_('APPLY_SAVINGS_INTEREST', 'Savings', auth.session.userId, 'BULK',
+    // Execute batch writes (Firestore allows up to 500 per batch)
+    var BATCH_SIZE = 400;
+    for (var i = 0; i < batchWrites.length; i += BATCH_SIZE) {
+      firestoreBatchWrite_(batchWrites.slice(i, i + BATCH_SIZE));
+    }
+    for (var j = 0; j < memberBatch.length; j += BATCH_SIZE) {
+      firestoreBatchWrite_(memberBatch.slice(j, j + BATCH_SIZE));
+    }
+
+    // Record transactions (sequential, but each is a small document)
+    transactionDocs.forEach(function(td) { recordTransaction_(td); });
+
+    logAction_('APPLY_SAVINGS_INTEREST', 'Savings', auth.session ? auth.session.userId : 'system', 'BULK',
                null, { rate: quarterlyRate, membersProcessed: applied });
     return successResponse({ membersProcessed: applied },
       'Quarterly interest applied to ' + applied + ' savings accounts.');
@@ -269,6 +303,7 @@ function applyQuarterlySavingsInterest(params) {
     return errorResponse('Failed to apply savings interest.', 500);
   }
 }
+
 
 /**
  * Returns savings summary stats for admin dashboard.

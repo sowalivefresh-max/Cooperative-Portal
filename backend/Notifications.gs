@@ -164,25 +164,24 @@ function markNotificationsRead(params) {
 
     var recipientId = auth.session.memberId || auth.session.userId;
     var ids = params.notificationIds;
+    var now = new Date().toISOString();
 
     if (ids === 'ALL') {
       var userNotifs = firestoreQuery_('notifications', [
         { field: 'recipientId', op: '==', value: recipientId },
         { field: 'isRead',      op: '==', value: false }
       ]);
-      userNotifs.forEach(function(n) {
-        firestoreUpdate_('notifications', n._id, {
-          isRead:   true,
-          readAt:   new Date().toISOString()
-        });
-      });
-    } else if (Array.isArray(ids)) {
-      ids.forEach(function(id) {
-        firestoreUpdate_('notifications', id, {
-          isRead: true,
-          readAt: new Date().toISOString()
-        });
-      });
+      if (userNotifs.length > 0) {
+        firestoreBatchWrite_(userNotifs.map(function(n) {
+          return { type: 'update', collection: 'notifications', docId: n._id,
+                   data: { isRead: true, readAt: now } };
+        }));
+      }
+    } else if (Array.isArray(ids) && ids.length > 0) {
+      firestoreBatchWrite_(ids.map(function(id) {
+        return { type: 'update', collection: 'notifications', docId: id,
+                 data: { isRead: true, readAt: now } };
+      }));
     }
 
     return successResponse(null, 'Notification(s) marked as read.');
@@ -191,6 +190,7 @@ function markNotificationsRead(params) {
     return errorResponse('Failed to mark notifications as read.', 500);
   }
 }
+
 
 /**
  * Returns count of unread notifications for the current user.
