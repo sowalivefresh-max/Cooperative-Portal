@@ -324,34 +324,48 @@ COOP.darkMode = {
   }
 };
 
-// ─── PAGINATION ───────────────────────────────────────────────────────────────
+COOP.pagination = (function () {
+  var _cb = null; // shared callback slot — one pagination per page view
 
-COOP.pagination = {
-  render: function (containerId, page, pages, onPage) {
-    var container = document.getElementById(containerId);
-    if (!container) return;
-    if (pages <= 1) { container.innerHTML = ''; return; }
+  return {
+    render: function (containerId, page, pages, onPageCallback) {
+      var container = document.getElementById(containerId);
+      if (!container) return;
+      if (!pages || pages <= 1) { container.innerHTML = ''; return; }
 
-    var html = '<div class="pagination-coop">';
-    html += '<button class="page-btn" ' + (page <= 1 ? 'disabled' : '') +
-      ' onclick="(' + onPage.toString() + ')(' + (page - 1) + ')">‹</button>';
+      _cb = onPageCallback; // store for onclick
+      COOP.pagination._cb = _cb;
 
-    var start = Math.max(1, page - 2);
-    var end = Math.min(pages, page + 2);
-    if (start > 1) html += '<button class="page-btn" onclick="(' + onPage.toString() + ')(1)">1</button>' + (start > 2 ? '<span style="padding:0 4px;color:var(--text-muted)">…</span>' : '');
-    for (var i = start; i <= end; i++) {
-      html += '<button class="page-btn' + (i === page ? ' active' : '') +
-        '" onclick="(' + onPage.toString() + ')(' + i + ')">' + i + '</button>';
-    }
-    if (end < pages) html += (end < pages - 1 ? '<span style="padding:0 4px;color:var(--text-muted)">…</span>' : '') +
-      '<button class="page-btn" onclick="(' + onPage.toString() + ')(' + pages + ')">' + pages + '</button>';
+      function btn(label, p, disabled, active) {
+        return '<button class="page-btn' + (active ? ' active' : '') + '"' +
+          (disabled ? ' disabled' : ' onclick="COOP.pagination._cb(' + p + ')"') +
+          '>' + label + '</button>';
+      }
 
-    html += '<button class="page-btn" ' + (page >= pages ? 'disabled' : '') +
-      ' onclick="(' + onPage.toString() + ')(' + (page + 1) + ')">›</button>';
-    html += '</div>';
-    container.innerHTML = html;
-  }
-};
+      var html = '<div class="pagination-coop">';
+      html += btn('‹', page - 1, page <= 1, false);
+
+      var start = Math.max(1, page - 2);
+      var end   = Math.min(pages, page + 2);
+      if (start > 1) {
+        html += btn('1', 1, false, false);
+        if (start > 2) html += '<span style="padding:0 4px;color:var(--text-muted)">…</span>';
+      }
+      for (var i = start; i <= end; i++) {
+        html += btn(i, i, false, i === page);
+      }
+      if (end < pages) {
+        if (end < pages - 1) html += '<span style="padding:0 4px;color:var(--text-muted)">…</span>';
+        html += btn(pages, pages, false, false);
+      }
+      html += btn('›', page + 1, page >= pages, false);
+      html += '</div>';
+      container.innerHTML = html;
+    },
+    _cb: null
+  };
+})();
+
 
 // ─── SEARCH DEBOUNCE ─────────────────────────────────────────────────────────
 

@@ -1448,18 +1448,77 @@
     COOP.toast.info('Exporting transactions…');
   }
 
+  // ── Withdrawals Page ───────────────────────────────────────────────
+  var _wdrPage = 1;
+
   function renderWithdrawalsPage(el) {
-    el.innerHTML = '<div class="page-header"><div><h1 class="page-title">Withdrawals</h1></div></div>' +
-      '<div class="table-card"><div class="table-responsive"><table class="coop-table"><thead><tr><th>Withdrawal ID</th><th>Member</th><th>Amount</th><th>Reason</th><th>Method</th><th>Date</th></tr></thead><tbody id="withdrawalTbody"></tbody></table></div></div>';
-    COOP.api('getWithdrawals', { pageSize: 20 }, function(err, data) {
-      var tbody = document.getElementById('withdrawalTbody');
+    _wdrPage = 1;
+    el.innerHTML =
+      '<div class="page-header">' +
+        '<div><h1 class="page-title">Withdrawals</h1>' +
+        '<p id="wdrSubtitle" class="page-subtitle">Loading…</p></div>' +
+        '<div style="display:flex;gap:8px;align-items:center">' +
+          '<input id="wdrSearch" class="form-control" style="width:220px" placeholder="🔍 Search member…">' +
+        '</div>' +
+      '</div>' +
+      '<div class="table-card">' +
+        '<div class="table-responsive">' +
+          '<table class="coop-table"><thead><tr>' +
+            '<th>Withdrawal ID</th><th>Member</th><th>Amount</th>' +
+            '<th>Reason</th><th>Method</th><th>Date</th>' +
+          '</tr></thead><tbody id="withdrawalTbody"></tbody></table>' +
+        '</div>' +
+        '<div id="wdrPagination"></div>' +
+      '</div>';
+
+    // Wire up search with debounce
+    var searchEl = document.getElementById('wdrSearch');
+    if (searchEl) {
+      searchEl.addEventListener('input', COOP.debounce(function() {
+        _wdrPage = 1;
+        loadWithdrawals(_wdrPage);
+      }, 400));
+    }
+
+    loadWithdrawals(1);
+  }
+
+  function loadWithdrawals(page) {
+    _wdrPage = page || 1;
+    var search = (document.getElementById('wdrSearch') || {}).value || '';
+    var tbody  = document.getElementById('withdrawalTbody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="page-loader-ring"></div></div></td></tr>';
+
+    COOP.api('getWithdrawals', { page: _wdrPage, pageSize: 20, search: search || undefined }, function(err, data) {
+      tbody = document.getElementById('withdrawalTbody');
       if (!tbody) return;
-      if (err || !data || data.total === 0) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">💸</div><div>No withdrawals</div></div></td></tr>'; return; }
+
+      var subtitle = document.getElementById('wdrSubtitle');
+
+      if (err || !data || data.total === 0) {
+        tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">💸</div>' +
+          '<div>' + (err ? 'Failed to load withdrawals.' : 'No withdrawals found.') + '</div></div></td></tr>';
+        if (subtitle) subtitle.textContent = '';
+        if (document.getElementById('wdrPagination')) document.getElementById('wdrPagination').innerHTML = '';
+        return;
+      }
+
+      if (subtitle) subtitle.textContent =
+        'Showing ' + (((_wdrPage - 1) * 20) + 1) + '–' +
+        Math.min(_wdrPage * 20, data.total) + ' of ' + data.total + ' withdrawal(s)';
+
       tbody.innerHTML = data.data.map(function(w) {
-        return '<tr><td><code>' + w.withdrawalId + '</code></td><td>' + COOP.escHtml(w.memberName) + '</td>' +
+        return '<tr>' +
+          '<td><code>' + COOP.escHtml(w.withdrawalId) + '</code></td>' +
+          '<td>' + COOP.escHtml(w.memberName || '') + '<br><small style="color:var(--text-muted)">' + COOP.escHtml(w.memberId || '') + '</small></td>' +
           '<td><strong style="color:var(--danger)">' + COOP.fmt.currency(w.amount) + '</strong></td>' +
-          '<td>' + COOP.escHtml(w.reason || '') + '</td><td>' + w.paymentMethod + '</td><td>' + COOP.fmt.date(w.processedAt) + '</td></tr>';
+          '<td>' + COOP.escHtml(w.reason || '—') + '</td>' +
+          '<td>' + COOP.escHtml(w.paymentMethod || '—') + '</td>' +
+          '<td>' + COOP.fmt.date(w.processedAt) + '</td>' +
+          '</tr>';
       }).join('');
+
+      COOP.pagination.render('wdrPagination', data.page, data.pages, loadWithdrawals);
     });
   }
 
