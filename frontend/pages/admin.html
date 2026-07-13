@@ -1826,7 +1826,9 @@
     btn.disabled = true;
     COOP.api('applyForLoan', {
       memberId: memberId, productType: product, requestedAmount: amount,
-      duration: duration, purpose: purpose,
+      duration: duration, purpose: purpose
+    }, function(err, data) {
+      btn.disabled = false;
       if (err) { COOP.toast.error(err); return; }
       COOP.modal.close('applyLoanModal');
       COOP.toast.success('Loan application submitted! Loan No: ' + (data ? data.loanNumber : ''));
