@@ -632,6 +632,99 @@ COOP.guardPage = function (allowedRoles, onSuccess) {
   });
 };
 
+// ─── USER PROFILE MODAL ───────────────────────────────────────────────────────
+
+COOP.openEditProfile = function() {
+  var modalId = 'globalEditProfileModal';
+  var modal = document.getElementById(modalId);
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = modalId;
+    modal.className = 'modal-backdrop-coop';
+    modal.style.display = 'none';
+    modal.innerHTML = 
+      '<div class="modal-box" style="max-width:400px">' +
+        '<div class="modal-header-coop">' +
+          '<span style="font-size:22px">👤</span>' +
+          '<div class="modal-title-coop">Edit Profile</div>' +
+          '<button class="modal-close" onclick="COOP.modal.close(\'' + modalId + '\')">✕</button>' +
+        '</div>' +
+        '<div class="modal-body-coop">' +
+          '<div class="form-group" style="margin-bottom:14px">' +
+            '<label class="form-label">Full Name</label>' +
+            '<input type="text" id="prof_fullName" class="form-control">' +
+          '</div>' +
+          '<div class="form-group" style="margin-bottom:14px">' +
+            '<label class="form-label">Email Address</label>' +
+            '<input type="email" id="prof_email" class="form-control">' +
+          '</div>' +
+          '<div class="form-group" style="margin-bottom:14px">' +
+            '<label class="form-label">New Password</label>' +
+            '<input type="password" id="prof_password" class="form-control" placeholder="Leave blank to keep current">' +
+            '<small style="color:var(--text-muted);font-size:11px">Must be at least 8 characters</small>' +
+          '</div>' +
+        '</div>' +
+        '<div class="modal-footer-coop">' +
+          '<button class="btn-outline-coop" onclick="COOP.modal.close(\'' + modalId + '\')">Cancel</button>' +
+          '<button class="btn-primary-coop" id="saveProfileBtn" onclick="COOP.submitEditProfile()">💾 Save Profile</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+  }
+
+  // Pre-fill
+  document.getElementById('prof_fullName').value = COOP.user ? (COOP.user.fullName || '') : '';
+  document.getElementById('prof_email').value = COOP.user ? (COOP.user.email || '') : '';
+  document.getElementById('prof_password').value = '';
+
+  COOP.modal.open(modalId);
+};
+
+COOP.submitEditProfile = function() {
+  var fullName = document.getElementById('prof_fullName').value.trim();
+  var email = document.getElementById('prof_email').value.trim();
+  var password = document.getElementById('prof_password').value;
+
+  if (!fullName || !email) {
+    COOP.toast.warning('Full name and email are required.');
+    return;
+  }
+  
+  if (password && password.length > 0 && password.length < 8) {
+    COOP.toast.warning('Password must be at least 8 characters.');
+    return;
+  }
+
+  var btn = document.getElementById('saveProfileBtn');
+  btn.disabled = true;
+  COOP.loader.show('Updating profile...');
+
+  var payload = { fullName: fullName, email: email };
+  if (password) payload.password = password;
+
+  COOP.api('updateProfile', payload, function(err) {
+    btn.disabled = false;
+    COOP.loader.hide();
+    if (err) { COOP.toast.error(err); return; }
+    
+    COOP.toast.success('Profile updated successfully!');
+    COOP.modal.close('globalEditProfileModal');
+    
+    // Update local user object
+    if (COOP.user) {
+      COOP.user.fullName = fullName;
+      COOP.user.email = email;
+      COOP.saveSession(COOP.token, COOP.user);
+      
+      // Update UI greeting if it exists
+      var greeting = document.getElementById('dashboardGreeting');
+      if (greeting) greeting.textContent = 'Welcome back, ' + fullName + '!';
+      var topNavName = document.querySelector('.topbar-user-info div');
+      if (topNavName) topNavName.textContent = fullName;
+    }
+  });
+};
+
 // ─── INIT ON LOAD ─────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', function () {

@@ -221,6 +221,60 @@ function getCurrentUser(params) {
 }
 
 /**
+ * Updates the current user's own profile.
+ * @param {Object} params - { token, fullName, email, password? }
+ * @returns {Object}
+ */
+function updateProfile(params) {
+  try {
+    var session = validateSession(params.token);
+    if (!session) return errorResponse('Unauthorised.', 401);
+
+    var user = firestoreGet_('users', session.userId);
+    if (!user) return errorResponse('User not found.', 404);
+
+    var updates = { updatedAt: new Date().toISOString() };
+    
+    if (params.fullName) {
+      updates.fullName = String(params.fullName).trim();
+    }
+    
+    if (params.email) {
+      var newEmail = String(params.email).trim().toLowerCase();
+      if (!isValidEmail(newEmail)) return errorResponse('Invalid email address.', 400);
+      
+      if (newEmail !== user.email) {
+        // Check for duplicate
+        var existing = firestoreQuery_('users', [{ field: 'email', op: '==', value: newEmail }]);
+        if (existing.length > 0) return errorResponse('Email already in use.', 409);
+        updates.email = newEmail;
+      }
+    }
+    
+    if (params.password && params.password.length >= 8) {
+      updates.passwordHash = hashPassword(params.password);
+    } else if (params.password && params.password.length < 8) {
+      return errorResponse('Password must be at least 8 characters long.', 400);
+    }
+
+    firestoreUpdate_('users', user._id, updates);
+
+    // If the user is also a member, we might want to sync their email/phone, 
+    // but the request was "edit everything including email addresses" on the user dashboard.
+    // Syncing member profile is optional but good practice if memberId exists.
+    if (user.memberId && updates.email) {
+       firestoreUpdate_('members', user.memberId, { email: updates.email, updatedAt: new Date().toISOString() });
+    }
+
+    logAction_('UPDATE_PROFILE', 'Auth', session.userId, session.userId, user, updates);
+    return successResponse(null, 'Profile updated successfully.');
+  } catch (e) {
+    logError('Auth', 'updateProfile', e);
+    return errorResponse('Failed to update profile.', 500);
+  }
+}
+
+/**
  * Changes a user's own password.
  * @param {Object} params - { token, currentPassword, newPassword, confirmPassword }
  * @returns {Object}
@@ -469,11 +523,20 @@ function getUsers(params) {
     }
 
     var users = firestoreGetAll_('users');
+    
+    // Filter out developer and super_admin unless the requester is one of them
+    if (session.role !== 'developer' && session.role !== 'super_admin') {
+      users = users.filter(function(u) {
+        return u.role !== 'developer' && u.role !== 'super_admin';
+      });
+    }
+
     // Mask password hashes
     users = users.map(function(u) {
       delete u.passwordHash;
       return u;
     });
+
     if (params.search) {
       users = searchFilter(users, params.search, ['email', 'fullName', 'role']);
     }

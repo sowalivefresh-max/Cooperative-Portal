@@ -103,6 +103,9 @@
   </nav>
 
   <div class="sidebar-footer">
+    <button class="nav-link" onclick="COOP.openEditProfile()">
+      <span class="nav-icon">👤</span> My Profile
+    </button>
     <button class="nav-link" onclick="COOP.logout()" style="color:#ef9a9a">
       <span class="nav-icon">🚪</span> Logout
     </button>
@@ -146,6 +149,9 @@
     </div>
     <button onclick="showPage('profile');toggleUserMenu()" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text-primary)">
       👤 My Profile
+    </button>
+    <button onclick="COOP.openEditProfile();toggleUserMenu()" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text-primary)">
+      👤 Edit Profile
     </button>
     <button onclick="showPage('settings');toggleUserMenu()" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px 16px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text-primary)">
       ⚙️ Settings
@@ -470,6 +476,18 @@
             <input type="text" id="reg_nok_address" name="nokAddress" class="form-control" required>
           </div>
         </div>
+
+        <h4 style="margin:0 0 16px 0;font-size:14px;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:8px">4. Documents</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div class="form-group">
+            <label class="form-label">Passport Photograph</label>
+            <input type="file" id="reg_passport" name="passportPhoto" class="form-control" accept="image/*">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Signature</label>
+            <input type="file" id="reg_signature" name="signature" class="form-control" accept="image/*">
+          </div>
+        </div>
       </form>
     </div>
     <div class="modal-footer-coop">
@@ -729,6 +747,11 @@
           <label class="form-label">Member ID (if member)</label>
           <input type="text" id="usr_memberId" class="form-control" placeholder="MBR-00001">
         </div>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Password</label>
+        <input type="password" id="usr_password" class="form-control" placeholder="Leave blank to auto-generate">
+        <small style="color:var(--text-muted);font-size:11px">If provided, must be at least 8 characters</small>
       </div>
       <div style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:12px;font-size:12px;color:var(--text-secondary)">
         ℹ️ A temporary password will be auto-generated and must be changed on first login.
@@ -1804,9 +1827,6 @@
     COOP.api('applyForLoan', {
       memberId: memberId, productType: product, requestedAmount: amount,
       duration: duration, purpose: purpose,
-      repaymentFrequency: document.getElementById('ln_frequency').value
-    }, function(err, data) {
-      btn.disabled = false;
       if (err) { COOP.toast.error(err); return; }
       COOP.modal.close('applyLoanModal');
       COOP.toast.success('Loan application submitted! Loan No: ' + (data ? data.loanNumber : ''));
@@ -1876,6 +1896,7 @@
     document.getElementById('usr_fullName').value = '';
     document.getElementById('usr_email').value = '';
     document.getElementById('usr_memberId').value = '';
+    document.getElementById('usr_password').value = '';
     COOP.modal.open('createUserModal');
   }
   function submitCreateUser() {
@@ -1883,17 +1904,29 @@
     var email    = document.getElementById('usr_email').value.trim();
     var role     = document.getElementById('usr_role').value;
     var memberId = document.getElementById('usr_memberId').value.trim();
+    var password = document.getElementById('usr_password').value;
+    
     if (!fullName || !email) { COOP.toast.warning('Full name and email are required.'); return; }
+    if (password && password.length > 0 && password.length < 8) {
+      COOP.toast.warning('Password must be at least 8 characters long.'); return;
+    }
+    
     var btn = document.getElementById('saveUserBtn');
     btn.disabled = true;
     COOP.api('createUser', {
       fullName: fullName, email: email, role: role,
-      memberId: memberId || null
+      memberId: memberId || null, password: password || null
     }, function(err, data) {
       btn.disabled = false;
       if (err) { COOP.toast.error(err); return; }
       COOP.modal.close('createUserModal');
-      COOP.toast.success('User created! Temp password: ' + (data ? data.tempPassword : ''));
+      var msg = 'User created! ';
+      if (password) {
+        msg += 'User can now login with their provided password.';
+      } else {
+        msg += 'Temp password: ' + (data ? data.tempPassword : '');
+      }
+      COOP.toast.success(msg);
       loadUsers();
     });
   }
@@ -1994,17 +2027,39 @@
 
     var btn = document.getElementById('saveMemberBtn');
     btn.disabled = true;
-    COOP.loader.show('Registering member...');
-    COOP.api('registerMember', payload, function(err, res) {
-      btn.disabled = false;
-      COOP.loader.hide();
-      if (err) { COOP.toast.error(err); return; }
-      COOP.modal.close('memberRegModal');
-      COOP.toast.success('Member registered successfully! Member No: ' + res.memberNumber);
-      if (_loadedPages['members']) {
-        // Trigger reload of members page
-        if (typeof loadMembers === 'function') loadMembers(1);
+    COOP.loader.show('Preparing registration...');
+
+    // Helper to read file as Base64
+    function readFileAsBase64(inputId, callback) {
+      var input = document.getElementById(inputId);
+      if (input && input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) { callback(e.target.result); };
+        reader.onerror = function() { callback(null); };
+        reader.readAsDataURL(input.files[0]);
+      } else {
+        callback(null);
       }
+    }
+
+    readFileAsBase64('reg_passport', function(passportB64) {
+      if (passportB64) payload.passportPhotoUrl = passportB64;
+      
+      readFileAsBase64('reg_signature', function(signatureB64) {
+        if (signatureB64) payload.signatureUrl = signatureB64;
+        
+        COOP.loader.show('Registering member...');
+        COOP.api('registerMember', payload, function(err, res) {
+          btn.disabled = false;
+          COOP.loader.hide();
+          if (err) { COOP.toast.error(err); return; }
+          COOP.modal.close('memberRegModal');
+          COOP.toast.success('Member registered successfully! Member No: ' + res.memberNumber);
+          if (_loadedPages['members']) {
+            if (typeof loadMembers === 'function') loadMembers(1);
+          }
+        });
+      });
     });
   }
 

@@ -70,6 +70,33 @@ function getMember(params) {
 }
 
 /**
+ * Utility to process Base64 file uploads.
+ * If a 'driveFolderId' is configured in settings, it uploads to Drive and returns the URL.
+ * Otherwise, it returns the raw Base64 string for Firestore storage.
+ */
+function processBase64Upload_(base64Str, filename) {
+  if (!base64Str || typeof base64Str !== 'string' || !base64Str.startsWith('data:')) return base64Str;
+  
+  var folderId = getSystemSetting_('driveFolderId');
+  if (!folderId) return base64Str;
+  
+  try {
+    var folder = DriveApp.getFolderById(folderId);
+    var split = base64Str.split(',');
+    var mimeType = split[0].match(/:(.*?);/)[1];
+    var data = Utilities.base64Decode(split[1]);
+    var blob = Utilities.newBlob(data, mimeType, filename);
+    var file = folder.createFile(blob);
+    // Set permission so it's viewable by the web app
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return file.getDownloadUrl();
+  } catch (e) {
+    logError('Members', 'processBase64Upload_', e);
+    return base64Str; // Fallback to raw base64 if upload fails
+  }
+}
+
+/**
  * Registers a new member.
  * @param {Object} params - { token, fullName, gender, dateOfBirth, maritalStatus,
  *                            occupation, employer, residentialAddress, phone, email,
@@ -95,6 +122,10 @@ function createMember(params) {
     var memberNumber = generateId('MBR', 'members');
     var now = new Date().toISOString();
 
+    // Process file uploads
+    var passportUrl = processBase64Upload_(params.passportPhotoUrl, memberNumber + '_passport');
+    var signatureUrl = processBase64Upload_(params.signatureUrl, memberNumber + '_signature');
+
     var memberData = {
       memberNumber:        memberNumber,
       fullName:            sanitise(params.fullName),
@@ -110,8 +141,8 @@ function createMember(params) {
       beneficiary:         params.beneficiary || null,
       nationalId:          params.nationalId || '',
       bankDetails:         params.bankDetails || null,
-      passportPhotoUrl:    params.passportPhotoUrl || '',
-      signatureUrl:        params.signatureUrl || '',
+      passportPhotoUrl:    passportUrl || '',
+      signatureUrl:        signatureUrl || '',
       dateJoined:          params.dateJoined || now,
       status:              'Active',
       totalSavings:        0,
@@ -190,6 +221,13 @@ function updateMember(params) {
           ? sanitise(params[field]) : params[field];
       }
     });
+
+    if (updates.passportPhotoUrl && updates.passportPhotoUrl.startsWith('data:')) {
+      updates.passportPhotoUrl = processBase64Upload_(updates.passportPhotoUrl, params.memberId + '_passport');
+    }
+    if (updates.signatureUrl && updates.signatureUrl.startsWith('data:')) {
+      updates.signatureUrl = processBase64Upload_(updates.signatureUrl, params.memberId + '_signature');
+    }
 
     if (updates.email) updates.email = updates.email.toLowerCase();
     if (updates.email && !isValidEmail(updates.email)) {
