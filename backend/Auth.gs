@@ -427,6 +427,62 @@ function unlockAccount(params) {
   }
 }
 
+/**
+ * Allows a super_admin to impersonate another user.
+ * @param {Object} params - { token, targetUserId }
+ */
+function impersonateUser(params) {
+  try {
+    var session = validateSession(params.token);
+    if (!session) return errorResponse('Unauthorised.', 401);
+    
+    // Only super_admin can impersonate
+    if (session.role !== 'super_admin') {
+      return errorResponse('Insufficient permissions. Only Super Admins can impersonate users.', 403);
+    }
+
+    var targetUser = firestoreGet_('users', params.targetUserId);
+    if (!targetUser) return errorResponse('Target user not found.', 404);
+    if (!targetUser.isActive) return errorResponse('Target user account is disabled.', 403);
+    
+    // Explicitly block impersonating developers
+    if (targetUser.role === 'developer') {
+      return errorResponse('Cannot impersonate a developer account.', 403);
+    }
+
+    // Generate a fresh token for the target user
+    var newToken = generateToken_();
+    var expires = new Date();
+    expires.setHours(expires.getHours() + 12);
+
+    var targetSessionData = {
+      token: newToken,
+      userId: targetUser.userId,
+      role: targetUser.role,
+      memberId: targetUser.memberId || null,
+      expiresAt: expires.toISOString(),
+      createdAt: new Date().toISOString()
+    };
+    firestoreCreate_('sessions', targetSessionData, newToken);
+
+    logAction_('IMPERSONATE_USER', 'Auth', session.userId, targetUser.userId, null, { targetRole: targetUser.role });
+    
+    return successResponse({ 
+      token: newToken, 
+      user: {
+        userId: targetUser.userId,
+        fullName: targetUser.fullName,
+        email: targetUser.email,
+        role: targetUser.role,
+        memberId: targetUser.memberId || null
+      }
+    }, 'Impersonation successful.');
+  } catch (e) {
+    logError('Auth', 'impersonateUser', e);
+    return errorResponse('Impersonation failed.', 500);
+  }
+}
+
 // ─── USER MANAGEMENT ─────────────────────────────────────────────────────────
 
 /**

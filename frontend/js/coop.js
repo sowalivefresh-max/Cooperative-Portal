@@ -628,8 +628,42 @@ COOP.guardPage = function (allowedRoles, onSuccess) {
       window.location.href = COOP.getLoginUrl();
       return;
     }
-    if (typeof onSuccess === 'function') onSuccess(user);
+    if (typeof onSuccess === 'function') {
+      onSuccess(user);
+      
+      // Impersonation Banner Logic
+      if (localStorage.getItem('coopOriginalToken')) {
+        var banner = document.createElement('div');
+        banner.style.position = 'fixed';
+        banner.style.top = '0';
+        banner.style.left = '0';
+        banner.style.right = '0';
+        banner.style.backgroundColor = '#d32f2f';
+        banner.style.color = '#fff';
+        banner.style.textAlign = 'center';
+        banner.style.padding = '10px';
+        banner.style.zIndex = '10000';
+        banner.style.fontWeight = 'bold';
+        banner.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+        banner.innerHTML = '🎭 You are impersonating ' + COOP.escHtml(user.fullName) + ' (' + COOP.escHtml(user.email) + '). ' +
+          '<button onclick="COOP.endImpersonation()" style="margin-left:15px;padding:5px 12px;cursor:pointer;border:none;border-radius:4px;background:#fff;color:#d32f2f;font-weight:bold;font-size:13px">Return to Super Admin</button>';
+        document.body.appendChild(banner);
+        // Adjust main wrapper if exists
+        var mw = document.querySelector('.main-wrapper');
+        if (mw) { mw.style.paddingTop = '40px'; } else { document.body.style.paddingTop = '40px'; }
+      }
+    }
   });
+};
+
+COOP.endImpersonation = function() {
+  var originalToken = localStorage.getItem('coopOriginalToken');
+  if (originalToken) {
+    localStorage.setItem('coopToken', originalToken);
+    localStorage.removeItem('coopOriginalToken');
+    // We assume the admin dashboard URL or simply redirecting to root works
+    window.location.href = COOP.getAppUrl() ? COOP.getAppUrl() + '?page=admin' : '/?page=admin';
+  }
 };
 
 // ─── USER PROFILE MODAL ───────────────────────────────────────────────────────

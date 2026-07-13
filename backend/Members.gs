@@ -171,13 +171,36 @@ function createMember(params) {
       updatedAt:       now
     }, savingsId);
 
-    // Send welcome email
+    // 1. Generate temp password and create User Account
+    var tempPassword = generateTempPassword(10);
+    var userId = generateId('USR', 'users');
+    var userData = {
+      email:                memberData.email,
+      fullName:             memberData.fullName,
+      role:                 'member',
+      passwordHash:         hashPassword(tempPassword),
+      memberId:             memberNumber,
+      isActive:             true,
+      requirePasswordChange: true,
+      failedLoginAttempts:  0,
+      lockedUntil:          null,
+      lastLogin:            null,
+      createdBy:            auth.session.userId,
+      createdAt:            now,
+      updatedAt:            now
+    };
+    firestoreCreate_('users', userData, userId);
+
+    // Send welcome email with login details
     var societyName = getSetting('societyName') || 'Cooperative Society';
     var emailSubject = 'Welcome to ' + societyName;
     var emailBody = 'Dear ' + memberData.fullName + ',\n\n' +
       'Welcome to ' + societyName + '!\n\n' +
       'Your membership number is: ' + memberNumber + '\n\n' +
-      'You can now access your personal dashboard using your registered email.\n\n' +
+      'An account has been automatically created for you. You can access your personal dashboard using the following credentials:\n\n' +
+      'Email: ' + memberData.email + '\n' +
+      'Temporary Password: ' + tempPassword + '\n\n' +
+      'Please log in and change your password immediately.\n\n' +
       'Regards,\nThe ' + societyName + ' Team';
     sendEmail(memberData.email, emailSubject, emailBody);
 
@@ -188,10 +211,46 @@ function createMember(params) {
       'System');
 
     logAction_('CREATE_MEMBER', 'Members', auth.session.userId, memberNumber, null, memberData);
-    return successResponse({ memberNumber: memberNumber }, 'Member registered successfully.');
+    return successResponse({ memberNumber: memberNumber, tempPassword: tempPassword }, 'Member registered successfully.');
   } catch (e) {
     logError('Members', 'createMember', e);
     return errorResponse('Failed to register member.', 500);
+  }
+}
+
+/**
+ * Bulk registers multiple members from an array.
+ * @param {Object} params - { token, members: Array of member objects }
+ */
+function bulkCreateMembers(params) {
+  try {
+    var auth = authorise_(params.token, 'manage_members');
+    if (auth.error) return auth.error;
+
+    if (!params.members || !Array.isArray(params.members) || params.members.length === 0) {
+      return errorResponse('No members provided for bulk creation.', 400);
+    }
+
+    var results = { successful: 0, failed: 0, errors: [] };
+    
+    // Process each member sequentially
+    for (var i = 0; i < params.members.length; i++) {
+      var m = params.members[i];
+      // Inject token so createMember can authorize (it will skip DB check since auth caching is usually not a thing, but it's fine)
+      m.token = params.token;
+      var res = createMember(m);
+      if (res && res.success) {
+        results.successful++;
+      } else {
+        results.failed++;
+        results.errors.push('Row ' + (i + 1) + ' (' + (m.fullName || 'Unknown') + '): ' + res.message);
+      }
+    }
+
+    return successResponse(results, 'Bulk registration completed. Successful: ' + results.successful + ', Failed: ' + results.failed);
+  } catch (e) {
+    logError('Members', 'bulkCreateMembers', e);
+    return errorResponse('Failed to process bulk registration.', 500);
   }
 }
 

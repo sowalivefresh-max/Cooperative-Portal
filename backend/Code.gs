@@ -93,11 +93,13 @@ function getActionWhitelist_() {
     'createUser':                      createUser,
     'updateUser':                      updateUser,
     'getUsers':                        getUsers,
+    'impersonateUser':                 impersonateUser,
 
     // ── Members ─────────────────────────────────────────────
     'getMembers':                      getMembers,
     'getMember':                       getMember,
     'createMember':                    createMember,
+    'bulkCreateMembers':               bulkCreateMembers,
     'updateMember':                    updateMember,
     'suspendMember':                   suspendMember,
     'activateMember':                  activateMember,
