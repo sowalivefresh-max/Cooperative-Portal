@@ -203,13 +203,7 @@ function getCurrentUser(params) {
     if (user.memberId) {
       var member = firestoreGet_('members', user.memberId);
       if (member) {
-        result.memberDetails = {
-          memberNumber: member.memberNumber,
-          fullName: member.fullName,
-          passportPhotoUrl: member.passportPhotoUrl,
-          phone: member.phone,
-          status: member.status
-        };
+        result.memberDetails = member;
       }
     }
 
@@ -259,11 +253,26 @@ function updateProfile(params) {
 
     firestoreUpdate_('users', user._id, updates);
 
-    // If the user is also a member, we might want to sync their email/phone, 
-    // but the request was "edit everything including email addresses" on the user dashboard.
-    // Syncing member profile is optional but good practice if memberId exists.
-    if (user.memberId && updates.email) {
-       firestoreUpdate_('members', user.memberId, { email: updates.email, updatedAt: new Date().toISOString() });
+    // Update all member profile fields if user is a member
+    if (user.memberId) {
+      var memberUpdates = { updatedAt: new Date().toISOString() };
+      var updatableMemberFields = [
+        'fullName', 'email', 'phone', 'altPhone', 'gender', 'dateOfBirth',
+        'maritalStatus', 'occupation', 'employer', 'residentialAddress',
+        'nextOfKinName', 'nextOfKinRelationship', 'nextOfKinPhone', 'nextOfKinAddress'
+      ];
+      
+      // email and fullName could come from updates or params
+      if (updates.email) memberUpdates.email = updates.email;
+      if (updates.fullName) memberUpdates.fullName = updates.fullName;
+      
+      updatableMemberFields.forEach(function(field) {
+        if (params[field] !== undefined && field !== 'email' && field !== 'fullName') {
+          memberUpdates[field] = String(params[field]).trim();
+        }
+      });
+      
+      firestoreUpdate_('members', user.memberId, memberUpdates);
     }
 
     logAction_('UPDATE_PROFILE', 'Auth', session.userId, session.userId, user, updates);

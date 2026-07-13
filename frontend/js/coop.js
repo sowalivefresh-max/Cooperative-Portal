@@ -676,40 +676,97 @@ COOP.openEditProfile = function() {
     modal.id = modalId;
     modal.className = 'modal-backdrop-coop';
     modal.style.display = 'none';
-    modal.innerHTML = 
-      '<div class="modal-box" style="max-width:400px">' +
-        '<div class="modal-header-coop">' +
-          '<span style="font-size:22px">👤</span>' +
-          '<div class="modal-title-coop">Edit Profile</div>' +
-          '<button class="modal-close" onclick="COOP.modal.close(\'' + modalId + '\')">✕</button>' +
-        '</div>' +
-        '<div class="modal-body-coop">' +
-          '<div class="form-group" style="margin-bottom:14px">' +
+    document.body.appendChild(modal);
+  }
+
+  var isMember = !!(COOP.user && COOP.user.memberId);
+  var html = 
+    '<div class="modal-box large" style="max-width:800px; max-height: 90vh; display: flex; flex-direction: column;">' +
+      '<div class="modal-header-coop" style="flex-shrink:0">' +
+        '<span style="font-size:22px">👤</span>' +
+        '<div class="modal-title-coop">Edit Profile</div>' +
+        '<button class="modal-close" onclick="COOP.modal.close(\'' + modalId + '\')">✕</button>' +
+      '</div>' +
+      '<div class="modal-body-coop" style="overflow-y:auto; flex-grow: 1; padding: 20px;">' +
+        '<form id="globalEditProfileForm">' +
+        '<h4 style="margin:0 0 16px 0;font-size:14px;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:8px">Account Information</h4>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">' +
+          '<div class="form-group">' +
             '<label class="form-label">Full Name</label>' +
             '<input type="text" id="prof_fullName" class="form-control">' +
           '</div>' +
-          '<div class="form-group" style="margin-bottom:14px">' +
+          '<div class="form-group">' +
             '<label class="form-label">Email Address</label>' +
             '<input type="email" id="prof_email" class="form-control">' +
           '</div>' +
-          '<div class="form-group" style="margin-bottom:14px">' +
+          '<div class="form-group">' +
             '<label class="form-label">New Password</label>' +
             '<input type="password" id="prof_password" class="form-control" placeholder="Leave blank to keep current">' +
             '<small style="color:var(--text-muted);font-size:11px">Must be at least 8 characters</small>' +
           '</div>' +
+        '</div>';
+
+  if (isMember) {
+    html += 
+        '<h4 style="margin:24px 0 16px 0;font-size:14px;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:8px">Contact & Demographics</h4>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">' +
+          '<div class="form-group"><label class="form-label">Phone Number</label><input type="text" id="prof_phone" class="form-control"></div>' +
+          '<div class="form-group"><label class="form-label">Alt Phone</label><input type="text" id="prof_altPhone" class="form-control"></div>' +
+          '<div class="form-group"><label class="form-label">Gender</label><select id="prof_gender" class="form-control form-select"><option value="Male">Male</option><option value="Female">Female</option></select></div>' +
+          '<div class="form-group"><label class="form-label">Date of Birth</label><input type="date" id="prof_dob" class="form-control"></div>' +
         '</div>' +
-        '<div class="modal-footer-coop">' +
-          '<button class="btn-outline-coop" onclick="COOP.modal.close(\'' + modalId + '\')">Cancel</button>' +
-          '<button class="btn-primary-coop" id="saveProfileBtn" onclick="COOP.submitEditProfile()">💾 Save Profile</button>' +
+        '<div class="form-group" style="margin-bottom:24px">' +
+          '<label class="form-label">Residential Address</label>' +
+          '<textarea id="prof_address" class="form-control" rows="2"></textarea>' +
         '</div>' +
-      '</div>';
-    document.body.appendChild(modal);
+        
+        '<h4 style="margin:24px 0 16px 0;font-size:14px;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:8px">Employment</h4>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">' +
+          '<div class="form-group"><label class="form-label">Marital Status</label><select id="prof_marital" class="form-control form-select"><option value="Single">Single</option><option value="Married">Married</option><option value="Divorced">Divorced</option><option value="Widowed">Widowed</option></select></div>' +
+          '<div class="form-group"><label class="form-label">Occupation</label><input type="text" id="prof_occupation" class="form-control"></div>' +
+          '<div class="form-group"><label class="form-label">Employer</label><input type="text" id="prof_employer" class="form-control"></div>' +
+        '</div>' +
+        
+        '<h4 style="margin:24px 0 16px 0;font-size:14px;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:8px">Next of Kin</h4>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">' +
+          '<div class="form-group"><label class="form-label">Name</label><input type="text" id="prof_nok_name" class="form-control"></div>' +
+          '<div class="form-group"><label class="form-label">Relationship</label><input type="text" id="prof_nok_rel" class="form-control"></div>' +
+          '<div class="form-group"><label class="form-label">Phone</label><input type="text" id="prof_nok_phone" class="form-control"></div>' +
+          '<div class="form-group"><label class="form-label">Address</label><input type="text" id="prof_nok_address" class="form-control"></div>' +
+        '</div>';
   }
 
-  // Pre-fill
+  html += 
+        '</form>' +
+      '</div>' +
+      '<div class="modal-footer-coop" style="flex-shrink:0">' +
+        '<button class="btn-outline-coop" onclick="COOP.modal.close(\'' + modalId + '\')">Cancel</button>' +
+        '<button class="btn-primary-coop" id="saveProfileBtn" onclick="COOP.submitEditProfile()">💾 Save Profile</button>' +
+      '</div>' +
+    '</div>';
+
+  modal.innerHTML = html;
+
+  // Pre-fill fields
   document.getElementById('prof_fullName').value = COOP.user ? (COOP.user.fullName || '') : '';
   document.getElementById('prof_email').value = COOP.user ? (COOP.user.email || '') : '';
   document.getElementById('prof_password').value = '';
+
+  if (isMember && COOP.user.memberDetails) {
+    var m = COOP.user.memberDetails;
+    document.getElementById('prof_phone').value = m.phone || '';
+    document.getElementById('prof_altPhone').value = m.altPhone || '';
+    document.getElementById('prof_gender').value = m.gender || 'Male';
+    document.getElementById('prof_dob').value = m.dateOfBirth ? m.dateOfBirth.substring(0,10) : '';
+    document.getElementById('prof_address').value = m.residentialAddress || '';
+    document.getElementById('prof_marital').value = m.maritalStatus || 'Single';
+    document.getElementById('prof_occupation').value = m.occupation || '';
+    document.getElementById('prof_employer').value = m.employer || '';
+    document.getElementById('prof_nok_name').value = m.nextOfKinName || '';
+    document.getElementById('prof_nok_rel').value = m.nextOfKinRelationship || '';
+    document.getElementById('prof_nok_phone').value = m.nextOfKinPhone || '';
+    document.getElementById('prof_nok_address').value = m.nextOfKinAddress || '';
+  }
 
   COOP.modal.open(modalId);
 };
@@ -736,6 +793,22 @@ COOP.submitEditProfile = function() {
   var payload = { fullName: fullName, email: email };
   if (password) payload.password = password;
 
+  var isMember = !!(COOP.user && COOP.user.memberId);
+  if (isMember) {
+    payload.phone = document.getElementById('prof_phone').value.trim();
+    payload.altPhone = document.getElementById('prof_altPhone').value.trim();
+    payload.gender = document.getElementById('prof_gender').value;
+    payload.dateOfBirth = document.getElementById('prof_dob').value;
+    payload.residentialAddress = document.getElementById('prof_address').value.trim();
+    payload.maritalStatus = document.getElementById('prof_marital').value;
+    payload.occupation = document.getElementById('prof_occupation').value.trim();
+    payload.employer = document.getElementById('prof_employer').value.trim();
+    payload.nextOfKinName = document.getElementById('prof_nok_name').value.trim();
+    payload.nextOfKinRelationship = document.getElementById('prof_nok_rel').value.trim();
+    payload.nextOfKinPhone = document.getElementById('prof_nok_phone').value.trim();
+    payload.nextOfKinAddress = document.getElementById('prof_nok_address').value.trim();
+  }
+
   COOP.api('updateProfile', payload, function(err) {
     btn.disabled = false;
     COOP.loader.hide();
@@ -748,6 +821,14 @@ COOP.submitEditProfile = function() {
     if (COOP.user) {
       COOP.user.fullName = fullName;
       COOP.user.email = email;
+      if (isMember) {
+        if (!COOP.user.memberDetails) COOP.user.memberDetails = {};
+        for (var key in payload) {
+          if (key !== 'password' && payload.hasOwnProperty(key)) {
+            COOP.user.memberDetails[key] = payload[key];
+          }
+        }
+      }
       COOP.saveSession(COOP.token, COOP.user);
       
       // Update UI greeting if it exists
