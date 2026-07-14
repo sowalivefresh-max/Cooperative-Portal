@@ -64,8 +64,14 @@ function loginUser(params) {
 
     // Verify password
     if (!verifyPassword(password, user.passwordHash)) {
-      handleFailedLogin_(user);
-      var remaining = MAX_FAILED_ATTEMPTS - ((user.failedLoginAttempts || 0) + 1);
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+      var update = { failedLoginAttempts: user.failedLoginAttempts };
+      if (user.failedLoginAttempts >= MAX_FAILED_ATTEMPTS) {
+        update.lockedUntil = new Date(Date.now() + (LOCK_DURATION_MINUTES * 60000)).toISOString();
+      }
+      firestoreUpdate_('users', user._id, update);
+      
+      var remaining = MAX_FAILED_ATTEMPTS - user.failedLoginAttempts;
       if (remaining <= 0) {
         return errorResponse('Account locked after too many failed attempts. Try again in ' + LOCK_DURATION_MINUTES + ' minutes.', 423);
       }
@@ -118,7 +124,7 @@ function loginUser(params) {
     }, 'Login successful.');
 
   } catch (e) {
-    logError('Auth', 'loginUser', e);
+    Logger.log('[Auth] loginUser error: ' + e.message + '\\n' + e.stack);
     return errorResponse('Login failed. Please try again.', 500);
   }
 }

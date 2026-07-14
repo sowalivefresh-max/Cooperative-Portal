@@ -661,8 +661,7 @@
 
   function setLoading(btnId, textId, loading, text) {
     var btn = document.getElementById(btnId);
-    var txt = document.getElementById(textId);
-    if (!btn || !txt) return;
+    if (!btn) return;
     btn.disabled = loading;
     btn.innerHTML = loading
       ? '<div class="btn-spinner"></div>'
