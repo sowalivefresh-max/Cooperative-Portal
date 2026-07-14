@@ -33,11 +33,7 @@ function authorizeEmail() {
  * if you accidentally get locked out. It will set your password to "admin123".
  */
 function rescueAdmin() {
-  var email = Session.getActiveUser().getEmail().toLowerCase();
-  if (!email) {
-    Logger.log("Could not determine your email.");
-    return;
-  }
+  var email = "admin@cooperativeportal.com";
   
   var users = firestoreQuery_('users', [{ field: 'email', op: '==', value: email }]);
   if (users.length === 0) {
