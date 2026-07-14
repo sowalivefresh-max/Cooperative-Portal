@@ -402,7 +402,14 @@
       <button class="modal-close" onclick="COOP.modal.close('bulkMemberRegModal')">✕</button>
     </div>
     <div class="modal-body-coop" style="max-height:70vh;overflow-y:auto">
-      <p style="margin-top:0;font-size:14px;color:var(--text-light)">Upload a CSV file containing member details. The first row must be the header containing exactly these columns: <strong>fullName, email, phone, gender, residentialAddress</strong>. Other columns are optional.</p>
+      <p style="margin-top:0;font-size:14px;color:var(--text-light)">
+        Upload a CSV file containing member details. The first row must be the header containing exactly these columns: <strong>fullName, email, phone, gender, residentialAddress</strong>. Other columns are optional.
+      </p>
+      <div style="margin-bottom: 20px;">
+        <button class="btn-outline-coop" onclick="downloadBulkMemberTemplate()" style="font-size: 13px; padding: 6px 12px;">
+          <span style="font-size: 16px; margin-right: 5px;">⬇️</span> Download CSV Template
+        </button>
+      </div>
       <form id="bulkMemberRegForm">
         <div class="form-group-coop">
           <label>Select CSV File</label>
@@ -2025,6 +2032,21 @@
   function openBulkMemberRegModal() {
     document.getElementById('bulkMemberRegForm').reset();
     COOP.modal.open('bulkMemberRegModal');
+  }
+  function downloadBulkMemberTemplate() {
+    var headers = ['fullName', 'email', 'phone', 'gender', 'residentialAddress', 'altPhone', 'dateOfBirth', 'maritalStatus', 'occupation', 'employer', 'nokName', 'nokRelationship', 'nokPhone', 'nokAddress'];
+    var csvContent = headers.join(',') + '\\n';
+    var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    var link = document.createElement('a');
+    if (link.download !== undefined) {
+      var url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'Bulk_Registration_Template.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   }
 
   function submitBulkMemberReg() {
