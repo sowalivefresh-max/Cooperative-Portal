@@ -33,24 +33,36 @@ function authorizeEmail() {
  * if you accidentally get locked out. It will set your password to "admin123".
  */
 function rescueAdmin() {
-  var email = "admin@cooperativeportal.com";
+  Logger.log("Scanning database for administrator accounts...");
+  var users = firestoreQuery_('users', []); // Fetch all users
   
-  var users = firestoreQuery_('users', [{ field: 'email', op: '==', value: email }]);
-  if (users.length === 0) {
-    Logger.log("No user found with email " + email);
+  if (!users || users.length === 0) {
+    Logger.log("Your database has NO users at all! You need to run initPortal() first.");
     return;
   }
   
-  var user = users[0];
+  var foundAdmin = false;
   var newHash = hashPassword("admin123");
-  firestoreUpdate_('users', user._id, {
-    passwordHash: newHash,
-    failedLoginAttempts: 0,
-    lockedUntil: null,
-    requirePasswordChange: true
-  });
   
-  Logger.log("SUCCESS! Your password has been forcibly reset to: admin123");
+  for (var i = 0; i < users.length; i++) {
+    var u = users[i];
+    Logger.log("Found user email: " + u.email + " (Role: " + u.role + ")");
+    
+    if (u.role === 'super_admin' || u.role === 'developer') {
+      firestoreUpdate_('users', u._id, {
+        passwordHash: newHash,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        requirePasswordChange: true
+      });
+      Logger.log(">> SUCCESS: Reset password for " + u.email + " to 'admin123'");
+      foundAdmin = true;
+    }
+  }
+  
+  if (!foundAdmin) {
+    Logger.log("WARNING: No developer or super_admin accounts found! Please run initPortal() to create them.");
+  }
 }
 
 // ─── WEB APP ENTRY POINTS ─────────────────────────────────────────────────────
