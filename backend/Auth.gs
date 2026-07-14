@@ -351,23 +351,28 @@ function forgotPassword(params) {
     }
     var user = users[0];
 
-    var tempPw = generateTempPassword(10);
-    firestoreUpdate_('users', user._id, {
-      passwordHash: hashPassword(tempPw),
-      requirePasswordChange: true,
-      updatedAt: new Date().toISOString()
-    });
-
     var societyName = getSystemSetting_('societyName') || 'Cooperative Society';
     var subject = societyName + ' — Password Reset';
+    var tempPw = generateTempPassword(10);
     var body = 'Dear ' + (user.fullName || 'Member') + ',\n\n' +
                'Your temporary password is: ' + tempPw + '\n\n' +
                'Please log in and change your password immediately.\n\n' +
                'If you did not request this, please contact the administrator immediately.\n\n' +
                'Regards,\n' + societyName;
-    sendEmail(email, subject, body);
+               
+    var emailSent = sendEmail(email, subject, body);
+    
+    if (emailSent) {
+      firestoreUpdate_('users', user._id, {
+        passwordHash: hashPassword(tempPw),
+        requirePasswordChange: true,
+        updatedAt: new Date().toISOString()
+      });
+      logAction_('FORGOT_PASSWORD', 'Auth', null, user._id, null, { email: email });
+    } else {
+      return errorResponse('The system could not send the email. Please try again later or contact support.', 500);
+    }
 
-    logAction_('FORGOT_PASSWORD', 'Auth', null, user._id, null, { email: email });
     return successResponse(null, 'If this email exists in our system, a reset link has been sent.');
   } catch (e) {
     logError('Auth', 'forgotPassword', e);

@@ -28,6 +28,35 @@ function authorizeEmail() {
   }
 }
 
+/**
+ * Run this function from the editor to forcibly reset your own password
+ * if you accidentally get locked out. It will set your password to "admin123".
+ */
+function rescueAdmin() {
+  var email = Session.getActiveUser().getEmail().toLowerCase();
+  if (!email) {
+    Logger.log("Could not determine your email.");
+    return;
+  }
+  
+  var users = firestoreQuery_('users', [{ field: 'email', op: '==', value: email }]);
+  if (users.length === 0) {
+    Logger.log("No user found with email " + email);
+    return;
+  }
+  
+  var user = users[0];
+  var newHash = hashPassword("admin123");
+  firestoreUpdate_('users', user._id, {
+    passwordHash: newHash,
+    failedLoginAttempts: 0,
+    lockedUntil: null,
+    requirePasswordChange: true
+  });
+  
+  Logger.log("SUCCESS! Your password has been forcibly reset to: admin123");
+}
+
 // ─── WEB APP ENTRY POINTS ─────────────────────────────────────────────────────
 
 /**
