@@ -14,6 +14,20 @@
  * ============================================================
  */
 
+/**
+ * Run this function once from the editor to force Google Apps Script
+ * to prompt for email sending authorization.
+ */
+function authorizeEmail() {
+  var email = Session.getActiveUser().getEmail();
+  if (email) {
+    MailApp.sendEmail(email, "Authorization Successful", "Your cooperative portal can now send emails!");
+    Logger.log("Authorization email sent to " + email);
+  } else {
+    Logger.log("Could not determine active user email, but authorization should be triggered.");
+  }
+}
+
 // ─── WEB APP ENTRY POINTS ─────────────────────────────────────────────────────
 
 /**
