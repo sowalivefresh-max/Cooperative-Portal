@@ -31,17 +31,72 @@
 
 function getFirebaseConfig_() {
   var props = PropertiesService.getScriptProperties();
+  
+  // Extract project ID from Service Account if available, otherwise fallback
+  var saJson = props.getProperty('FIREBASE_SERVICE_ACCOUNT');
+  var projectId = 'YOUR_PROJECT_ID';
+  if (saJson) {
+    try {
+      projectId = JSON.parse(saJson).project_id;
+    } catch (e) {}
+  }
+  if (projectId === 'YOUR_PROJECT_ID') {
+    projectId = props.getProperty('FIREBASE_PROJECT_ID') || 'YOUR_PROJECT_ID';
+  }
+  
   return {
-    projectId: props.getProperty('FIREBASE_PROJECT_ID') || 'YOUR_PROJECT_ID',
+    projectId: projectId,
     baseUrl: function() {
-      var pid = props.getProperty('FIREBASE_PROJECT_ID') || 'YOUR_PROJECT_ID';
-      return 'https://firestore.googleapis.com/v1/projects/' + pid + '/databases/(default)/documents';
+      return 'https://firestore.googleapis.com/v1/projects/' + projectId + '/databases/(default)/documents';
     }
   };
 }
 
 function getFirestoreToken_() {
-  return ScriptApp.getOAuthToken();
+  var saJson = PropertiesService.getScriptProperties().getProperty('FIREBASE_SERVICE_ACCOUNT');
+  if (!saJson) {
+    throw new Error("CRITICAL: FIREBASE_SERVICE_ACCOUNT script property is missing. Please generate a Service Account JSON in Firebase Console and paste it into Script Properties.");
+  }
+  
+  var sa = JSON.parse(saJson);
+  var cache = CacheService.getScriptCache();
+  var cachedToken = cache.get('firestore_sa_token');
+  if (cachedToken) return cachedToken;
+  
+  var header = { alg: "RS256", typ: "JWT" };
+  var now = Math.floor(Date.now() / 1000);
+  var claim = {
+    iss: sa.client_email,
+    scope: "https://www.googleapis.com/auth/datastore",
+    aud: "https://oauth2.googleapis.com/token",
+    exp: now + 3600,
+    iat: now
+  };
+  
+  var toBase64 = function(obj) {
+    return Utilities.base64EncodeWebSafe(JSON.stringify(obj)).replace(/=+$/, '');
+  };
+  
+  var signatureInput = toBase64(header) + "." + toBase64(claim);
+  var signature = Utilities.computeRsaSha256Signature(signatureInput, sa.private_key);
+  var jwt = signatureInput + "." + Utilities.base64EncodeWebSafe(signature).replace(/=+$/, '');
+  
+  var response = UrlFetchApp.fetch("https://oauth2.googleapis.com/token", {
+    method: "post",
+    payload: {
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt
+    },
+    muteHttpExceptions: true
+  });
+  
+  if (response.getResponseCode() !== 200) {
+    throw new Error("Failed to get Service Account token: " + response.getContentText());
+  }
+  
+  var token = JSON.parse(response.getContentText()).access_token;
+  cache.put('firestore_sa_token', token, 3500);
+  return token;
 }
 
 // ─── CORE CRUD OPERATIONS ──────────────────────────────────────────────────────
