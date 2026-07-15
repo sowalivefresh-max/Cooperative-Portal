@@ -320,6 +320,32 @@ function initPortal() {
   Logger.log('THEN:      Change password. Verify system. Run initSuperAdmin() when ready.');
 }
 
+function forceResetDeveloper() {
+  var existing = firestoreQuery_('users', [{ field: 'role', op: '==', value: 'developer' }]);
+  if (existing.length === 0) {
+    Logger.log('No developer account found. Run initPortal() first.');
+    return;
+  }
+  
+  var dev = existing[0];
+  var newPassword = 'Dev@Portal2026!';
+  
+  firestoreUpdate_('users', dev._id, {
+    email: 'faith4grtns@gmail.com', // Change to user's real email so password resets work
+    passwordHash: hashPassword(newPassword),
+    requirePasswordChange: false,
+    failedLoginAttempts: 0,
+    lockedUntil: null
+  });
+  
+  Logger.log('=========================================');
+  Logger.log('DEVELOPER ACCOUNT RESCUED SUCCESSFULLY!');
+  Logger.log('New Email: faith4grtns@gmail.com');
+  Logger.log('New Password: ' + newPassword);
+  Logger.log('You can now log in immediately. Your password reset emails will now arrive properly!');
+  Logger.log('=========================================');
+}
+
 // ─── TIME-DRIVEN TRIGGER SETUP ────────────────────────────────────────────────
 
 /**
