@@ -5,5 +5,3 @@
 **/*.js
 **/*.html
 **/*.md
-**/*.json
-!appsscript.json
