@@ -600,12 +600,10 @@ function getUsers(params) {
 
     var users = firestoreGetAll_('users');
     
-    // Filter out developer and super_admin unless the requester is one of them
-    if (session.role !== 'developer' && session.role !== 'super_admin') {
-      users = users.filter(function(u) {
-        return u.role !== 'developer' && u.role !== 'super_admin';
-      });
-    }
+    // Filter out developer and super_admin so they are invisible on the admin dashboard
+    users = users.filter(function(u) {
+      return u.role !== 'developer' && u.role !== 'super_admin';
+    });
 
     // Mask password hashes
     users = users.map(function(u) {
