@@ -2076,9 +2076,10 @@
       localStorage.setItem('pendingImpersonationToken', data.token);
       localStorage.setItem('pendingImpersonationUser', JSON.stringify(data.user));
       
-      // Open frontend in new tab
-      var portalUrl = window.location.href.split('?')[0]; // Current base URL
-      window.open(portalUrl, '_blank');
+      // Open frontend in new tab on the correct dashboard for their role
+      var currentUrl = window.location.href.split('?')[0];
+      var newUrl = currentUrl.replace('admin.html', data.user.role + '.html');
+      window.open(newUrl, '_blank');
       
       COOP.toast.success('Opened ' + data.user.fullName + ' in a new tab.');
     });
