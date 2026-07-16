@@ -144,6 +144,7 @@ function getActionWhitelist_() {
     'unlockAccount':                   unlockAccount,
     'createUser':                      createUser,
     'updateUser':                      updateUser,
+    'updateProfile':                   updateProfile,
     'getUsers':                        getUsers,
     'impersonateUser':                 impersonateUser,
 
