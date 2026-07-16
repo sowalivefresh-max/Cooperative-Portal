@@ -795,6 +795,29 @@
   </div>
 </div>
 
+<!-- ── SET MANUAL PASSWORD MODAL ───────────────────────────────────────────────── -->
+<div class="modal-backdrop-coop" id="setManualPasswordModal" style="display:none">
+  <div class="modal-box" style="max-width:400px">
+    <div class="modal-header-coop">
+      <span style="font-size:22px">✏️</span>
+      <div class="modal-title-coop">Set User Password</div>
+      <button class="modal-close" onclick="COOP.modal.close('setManualPasswordModal')">✕</button>
+    </div>
+    <div class="modal-body-coop">
+      <input type="hidden" id="set_pw_userId">
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">New Password *</label>
+        <input type="text" id="set_pw_newPassword" class="form-control" placeholder="Enter new password">
+        <small style="color:var(--text-muted);font-size:11px">Must be at least 8 characters long</small>
+      </div>
+    </div>
+    <div class="modal-footer-coop">
+      <button class="btn-outline-coop" onclick="COOP.modal.close('setManualPasswordModal')">Cancel</button>
+      <button class="btn-primary-coop" id="saveManualPwBtn" onclick="submitSetManualPassword()">💾 Set Password</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── MEMBER PROFILE MODAL ───────────────────────────────────────────────── -->
 <div class="modal-backdrop-coop" id="memberProfileModal" style="display:none">
   <div class="modal-box large" style="max-width:700px">
@@ -1674,12 +1697,42 @@
           '<td>' + COOP.fmt.date(u.lastLogin) + '</td>' +
           '<td><div style="display:flex;gap:5px">' +
           '<button class="btn-outline-coop" style="font-size:11px;padding:3px 7px" onclick="resetUserPw(\'' + u._id + '\')">🔑 Reset PW</button>' +
+          '<button class="btn-outline-coop" style="font-size:11px;padding:3px 7px;margin-left:5px" onclick="openSetManualPassword(\'' + u._id + '\')">✏️ Set PW</button>' +
           (u.lockedUntil ? '<button style="font-size:11px;padding:3px 7px;background:var(--success-pale);color:var(--success);border:1px solid var(--success);border-radius:6px;cursor:pointer" onclick="unlockUser(\'' + u._id + '\')">🔓 Unlock</button>' : '') +
           (u.role !== 'developer' ? '<button class="btn-outline-coop" style="font-size:11px;padding:3px 7px" onclick="impersonateUser(\'' + u._id + '\')">🎭 Impersonate</button>' : '') +
           '</div></td></tr>';
       }).join('');
     });
   }
+  
+  function openSetManualPassword(userId) {
+    document.getElementById('set_pw_userId').value = userId;
+    document.getElementById('set_pw_newPassword').value = '';
+    COOP.modal.open('setManualPasswordModal');
+  }
+
+  function submitSetManualPassword() {
+    var userId = document.getElementById('set_pw_userId').value;
+    var newPassword = document.getElementById('set_pw_newPassword').value;
+    if (!newPassword || newPassword.length < 8) {
+      COOP.toast.warning('Password must be at least 8 characters.');
+      return;
+    }
+    
+    var btn = document.getElementById('saveManualPwBtn');
+    var oldText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-coop"></span> Saving...';
+    btn.disabled = true;
+
+    COOP.api('adminSetManualPassword', { userId: userId, newPassword: newPassword }, function(err) {
+      btn.innerHTML = oldText;
+      btn.disabled = false;
+      if (err) { COOP.toast.error(err); return; }
+      COOP.toast.success('Password updated successfully.');
+      COOP.modal.close('setManualPasswordModal');
+    });
+  }
+
   function resetUserPw(userId) {
     if (!confirm('Reset this user\'s password? A temporary password will be emailed to them.')) return;
     COOP.api('adminResetPassword', { userId: userId }, function(err, data) {

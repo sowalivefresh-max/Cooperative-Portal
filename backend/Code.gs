@@ -140,6 +140,7 @@ function getActionWhitelist_() {
     'changePassword':                  changePassword,
     'forgotPassword':                  forgotPassword,
     'adminResetPassword':              adminResetPassword,
+    'adminSetManualPassword':          adminSetManualPassword,
     'unlockAccount':                   unlockAccount,
     'createUser':                      createUser,
     'updateUser':                      updateUser,

@@ -421,6 +421,42 @@ function adminResetPassword(params) {
 }
 
 /**
+ * Admin manually sets another user's password.
+ * @param {Object} params - { token, userId, newPassword }
+ * @returns {Object}
+ */
+function adminSetManualPassword(params) {
+  try {
+    var session = validateSession(params.token);
+    if (!session) return errorResponse('Unauthorised.', 401);
+    if (!hasPermission_(session.role, 'reset_password')) {
+      return errorResponse('Insufficient permissions.', 403);
+    }
+
+    if (!params.newPassword || params.newPassword.length < 8) {
+      return errorResponse('Password must be at least 8 characters long.', 400);
+    }
+
+    var targetUser = firestoreGet_('users', params.userId);
+    if (!targetUser) return errorResponse('User not found.', 404);
+
+    firestoreUpdate_('users', params.userId, {
+      passwordHash: hashPassword(params.newPassword),
+      requirePasswordChange: false, // Explicitly set password doesn't force a change
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      updatedAt: new Date().toISOString()
+    });
+
+    logAction_('ADMIN_SET_MANUAL_PASSWORD', 'Auth', session.userId, params.userId, null, null);
+    return successResponse(null, 'Password has been set successfully.');
+  } catch (e) {
+    logError('Auth', 'adminSetManualPassword', e);
+    return errorResponse('Failed to set password.', 500);
+  }
+}
+
+/**
  * Unlocks a locked user account.
  * @param {Object} params - { token, userId }
  * @returns {Object}
