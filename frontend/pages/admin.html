@@ -2071,14 +2071,14 @@
     if (!confirm('Are you sure you want to impersonate this user?')) return;
     COOP.api('impersonateUser', { targetUserId: userId }, function(err, data) {
       if (err) { COOP.toast.error(err); return; }
-      
-      // Set pending impersonation flags for the new tab
-      localStorage.setItem('pendingImpersonationToken', data.token);
-      localStorage.setItem('pendingImpersonationUser', JSON.stringify(data.user));
+      // Set pending impersonation flags with a unique ID for the new tab
+      var impId = Date.now().toString() + Math.random().toString().substring(2, 6);
+      localStorage.setItem('impToken_' + impId, data.token);
+      localStorage.setItem('impUser_' + impId, JSON.stringify(data.user));
       
       // Open frontend in new tab on the correct dashboard for their role
       var currentUrl = window.location.href.split('?')[0];
-      var newUrl = currentUrl.replace('admin.html', data.user.role + '.html');
+      var newUrl = currentUrl.replace('admin.html', data.user.role + '.html') + '?imp_session=' + impId;
       window.open(newUrl, '_blank');
       
       COOP.toast.success('Opened ' + data.user.fullName + ' in a new tab.');

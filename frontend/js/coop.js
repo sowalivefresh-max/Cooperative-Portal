@@ -8,13 +8,22 @@
 
 var COOP = window.COOP || {};
 
-// Check if we are starting a new impersonated tab
-if (localStorage.getItem('pendingImpersonationToken')) {
-  sessionStorage.setItem('coopToken', localStorage.getItem('pendingImpersonationToken'));
-  sessionStorage.setItem('coopUser', localStorage.getItem('pendingImpersonationUser'));
-  sessionStorage.setItem('isImpersonating', 'true');
-  localStorage.removeItem('pendingImpersonationToken');
-  localStorage.removeItem('pendingImpersonationUser');
+// Check if we are starting a new impersonated tab via URL parameter
+var urlParams = new URLSearchParams(window.location.search);
+var impId = urlParams.get('imp_session');
+if (impId) {
+  var impToken = localStorage.getItem('impToken_' + impId);
+  var impUser = localStorage.getItem('impUser_' + impId);
+  if (impToken && impUser) {
+    sessionStorage.setItem('coopToken', impToken);
+    sessionStorage.setItem('coopUser', impUser);
+    sessionStorage.setItem('isImpersonating', 'true');
+    localStorage.removeItem('impToken_' + impId);
+    localStorage.removeItem('impUser_' + impId);
+  }
+  // Remove the parameter from the URL cleanly
+  var newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+  window.history.replaceState({path: newUrl}, '', newUrl);
 }
 
 COOP.token = sessionStorage.getItem('coopToken') || localStorage.getItem('coopToken') || '';
