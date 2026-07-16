@@ -771,6 +771,12 @@ COOP.openEditProfile = function() {
           '<div class="form-group"><label class="form-label">Relationship</label><input type="text" id="prof_nok_rel" class="form-control"></div>' +
           '<div class="form-group"><label class="form-label">Phone</label><input type="text" id="prof_nok_phone" class="form-control"></div>' +
           '<div class="form-group"><label class="form-label">Address</label><input type="text" id="prof_nok_address" class="form-control"></div>' +
+        '</div>' +
+        
+        '<h4 style="margin:24px 0 16px 0;font-size:14px;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:8px">Documents</h4>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">' +
+          '<div class="form-group"><label class="form-label">Passport Photograph</label><input type="file" id="prof_passport" accept="image/*" class="form-control"><small style="color:var(--text-light);font-size:11px">Leave blank to keep existing</small></div>' +
+          '<div class="form-group"><label class="form-label">Signature</label><input type="file" id="prof_signature" accept="image/*" class="form-control"><small style="color:var(--text-light);font-size:11px">Leave blank to keep existing</small></div>' +
         '</div>';
   }
 
@@ -847,35 +853,72 @@ COOP.submitEditProfile = function() {
     payload.nextOfKinAddress = document.getElementById('prof_nok_address').value.trim();
   }
 
-  COOP.api('updateProfile', payload, function(err) {
-    btn.disabled = false;
-    COOP.loader.hide();
-    if (err) { COOP.toast.error(err); return; }
-    
-    COOP.toast.success('Profile updated successfully!');
-    COOP.modal.close('globalEditProfileModal');
-    
-    // Update local user object
-    if (COOP.user) {
-      COOP.user.fullName = fullName;
-      COOP.user.email = email;
-      if (isMember) {
-        if (!COOP.user.memberDetails) COOP.user.memberDetails = {};
-        for (var key in payload) {
-          if (key !== 'password' && payload.hasOwnProperty(key)) {
-            COOP.user.memberDetails[key] = payload[key];
+  function sendProfileUpdate() {
+    COOP.api('updateProfile', payload, function(err) {
+      btn.disabled = false;
+      COOP.loader.hide();
+      if (err) { COOP.toast.error(err); return; }
+      
+      COOP.toast.success('Profile updated successfully!');
+      COOP.modal.close('globalEditProfileModal');
+      
+      // Update local user object
+      if (COOP.user) {
+        COOP.user.fullName = fullName;
+        COOP.user.email = email;
+        if (isMember) {
+          if (!COOP.user.memberDetails) COOP.user.memberDetails = {};
+          for (var key in payload) {
+            if (key !== 'password' && payload.hasOwnProperty(key)) {
+              COOP.user.memberDetails[key] = payload[key];
+            }
           }
         }
+        COOP.saveSession(COOP.token, COOP.user);
+        
+        // Update UI greeting if it exists
+        var greeting = document.getElementById('dashboardGreeting');
+        if (greeting) greeting.textContent = 'Welcome back, ' + fullName + '!';
+        var topNavName = document.querySelector('.topbar-user-info div');
+        if (topNavName) topNavName.textContent = fullName;
       }
-      COOP.saveSession(COOP.token, COOP.user);
       
-      // Update UI greeting if it exists
-      var greeting = document.getElementById('dashboardGreeting');
-      if (greeting) greeting.textContent = 'Welcome back, ' + fullName + '!';
-      var topNavName = document.querySelector('.topbar-user-info div');
-      if (topNavName) topNavName.textContent = fullName;
-    }
-  });
+      // Reload page to reflect changes
+      setTimeout(function() { window.location.reload(); }, 1500);
+    });
+  }
+
+  // Handle optional file uploads if member
+  if (isMember) {
+    var passportEl = document.getElementById('prof_passport');
+    var signatureEl = document.getElementById('prof_signature');
+    
+    var readPassport = function(cb) {
+      if (passportEl && passportEl.files && passportEl.files[0]) {
+        var r = new FileReader();
+        r.onload = function(e) { payload.passportPhotoUrl = e.target.result; cb(); };
+        r.onerror = function() { cb(); };
+        r.readAsDataURL(passportEl.files[0]);
+      } else { cb(); }
+    };
+    
+    var readSignature = function(cb) {
+      if (signatureEl && signatureEl.files && signatureEl.files[0]) {
+        var r = new FileReader();
+        r.onload = function(e) { payload.signatureUrl = e.target.result; cb(); };
+        r.onerror = function() { cb(); };
+        r.readAsDataURL(signatureEl.files[0]);
+      } else { cb(); }
+    };
+
+    readPassport(function() {
+      readSignature(function() {
+        sendProfileUpdate();
+      });
+    });
+  } else {
+    sendProfileUpdate();
+  }
 };
 
 // ─── INIT ON LOAD ─────────────────────────────────────────────────────────────

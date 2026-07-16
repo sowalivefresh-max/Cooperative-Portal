@@ -607,6 +607,20 @@
             <input type="text" id="edit_nok_address" name="nokAddress" class="form-control" required>
           </div>
         </div>
+
+        <h4 style="margin:0 0 16px 0;font-size:14px;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:8px">4. Documents</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div class="form-group">
+            <label class="form-label">Passport Photograph</label>
+            <input type="file" id="edit_passport" name="passportPhoto" class="form-control" accept="image/*">
+            <small style="color:var(--text-light);font-size:11px">Leave blank to keep existing</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Signature</label>
+            <input type="file" id="edit_signature" name="signature" class="form-control" accept="image/*">
+            <small style="color:var(--text-light);font-size:11px">Leave blank to keep existing</small>
+          </div>
+        </div>
       </form>
     </div>
     <div class="modal-footer-coop">
@@ -1996,13 +2010,34 @@
     var btn = document.getElementById('submitEditMemberBtn');
     btn.disabled = true;
     COOP.loader.show('Saving changes...');
-    COOP.api('updateMember', payload, function(err, res) {
-      btn.disabled = false;
-      COOP.loader.hide();
-      if (err) { COOP.toast.error(err); return; }
-      COOP.toast.success('Profile updated successfully.');
-      COOP.modal.close('editMemberModal');
-      loadMembers(1); // Refresh table
+
+    // Helper to read file as Base64
+    function readFileAsBase64(inputId, callback) {
+      var input = document.getElementById(inputId);
+      if (input && input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) { callback(e.target.result); };
+        reader.onerror = function() { callback(null); };
+        reader.readAsDataURL(input.files[0]);
+      } else {
+        callback(null);
+      }
+    }
+
+    readFileAsBase64('edit_passport', function(passportB64) {
+      if (passportB64) payload.passportPhotoUrl = passportB64;
+      readFileAsBase64('edit_signature', function(signatureB64) {
+        if (signatureB64) payload.signatureUrl = signatureB64;
+        
+        COOP.api('updateMember', payload, function(err, res) {
+          btn.disabled = false;
+          COOP.loader.hide();
+          if (err) { COOP.toast.error(err); return; }
+          COOP.toast.success('Profile updated successfully.');
+          COOP.modal.close('editMemberModal');
+          loadMembers(1); // Refresh table
+        });
+      });
     });
   }
 

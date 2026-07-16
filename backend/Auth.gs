@@ -278,6 +278,13 @@ function updateProfile(params) {
         }
       });
       
+      if (params.passportPhotoUrl && params.passportPhotoUrl.startsWith('data:')) {
+        memberUpdates.passportPhotoUrl = processBase64Upload_(params.passportPhotoUrl, user.memberId + '_passport');
+      }
+      if (params.signatureUrl && params.signatureUrl.startsWith('data:')) {
+        memberUpdates.signatureUrl = processBase64Upload_(params.signatureUrl, user.memberId + '_signature');
+      }
+      
       firestoreUpdate_('members', user.memberId, memberUpdates);
     }
 
