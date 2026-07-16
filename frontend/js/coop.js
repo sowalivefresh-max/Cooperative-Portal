@@ -206,6 +206,48 @@ COOP.fmt = {
   }
 };
 
+// ─── IMAGE COMPRESSION ────────────────────────────────────────────────────────
+COOP.compressImage = function(file, maxWidth, callback) {
+  if (!file || !file.type.match(/image.*/)) {
+    // If not an image, just read as base64 raw
+    var r = new FileReader();
+    r.onload = function(e) { callback(e.target.result); };
+    r.onerror = function() { callback(null); };
+    r.readAsDataURL(file);
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function (readerEvent) {
+    var image = new Image();
+    image.onload = function () {
+      var canvas = document.createElement('canvas');
+      var max_size = maxWidth || 800;
+      var width = image.width;
+      var height = image.height;
+      if (width > height) {
+        if (width > max_size) {
+          height *= max_size / width;
+          width = max_size;
+        }
+      } else {
+        if (height > max_size) {
+          width *= max_size / height;
+          height = max_size;
+        }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(image, 0, 0, width, height);
+      var dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      callback(dataUrl);
+    };
+    image.onerror = function() { callback(null); };
+    image.src = readerEvent.target.result;
+  };
+  reader.onerror = function() { callback(null); };
+  reader.readAsDataURL(file);
+};
+
 // ─── TOAST NOTIFICATIONS ─────────────────────────────────────────────────────
 
 COOP.toast = (function () {
@@ -895,19 +937,19 @@ COOP.submitEditProfile = function() {
     
     var readPassport = function(cb) {
       if (passportEl && passportEl.files && passportEl.files[0]) {
-        var r = new FileReader();
-        r.onload = function(e) { payload.passportPhotoUrl = e.target.result; cb(); };
-        r.onerror = function() { cb(); };
-        r.readAsDataURL(passportEl.files[0]);
+        COOP.compressImage(passportEl.files[0], 800, function(b64) {
+          if (b64) payload.passportPhotoUrl = b64;
+          cb();
+        });
       } else { cb(); }
     };
     
     var readSignature = function(cb) {
       if (signatureEl && signatureEl.files && signatureEl.files[0]) {
-        var r = new FileReader();
-        r.onload = function(e) { payload.signatureUrl = e.target.result; cb(); };
-        r.onerror = function() { cb(); };
-        r.readAsDataURL(signatureEl.files[0]);
+        COOP.compressImage(signatureEl.files[0], 800, function(b64) {
+          if (b64) payload.signatureUrl = b64;
+          cb();
+        });
       } else { cb(); }
     };
 

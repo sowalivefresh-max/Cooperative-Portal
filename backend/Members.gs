@@ -89,7 +89,7 @@ function processBase64Upload_(base64Str, filename) {
     var file = folder.createFile(blob);
     // Set permission so it's viewable by the web app
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    return file.getDownloadUrl();
+    return 'https://drive.google.com/uc?export=view&id=' + file.getId();
   } catch (e) {
     logError('Members', 'processBase64Upload_', e);
     return base64Str; // Fallback to raw base64 if upload fails

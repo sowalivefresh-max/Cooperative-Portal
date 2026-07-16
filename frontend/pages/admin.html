@@ -2011,14 +2011,11 @@
     btn.disabled = true;
     COOP.loader.show('Saving changes...');
 
-    // Helper to read file as Base64
+    // Helper to read file as Base64 (with compression)
     function readFileAsBase64(inputId, callback) {
       var input = document.getElementById(inputId);
       if (input && input.files && input.files[0]) {
-        var reader = new FileReader();
-        reader.onload = function(e) { callback(e.target.result); };
-        reader.onerror = function() { callback(null); };
-        reader.readAsDataURL(input.files[0]);
+        COOP.compressImage(input.files[0], 800, callback);
       } else {
         callback(null);
       }
