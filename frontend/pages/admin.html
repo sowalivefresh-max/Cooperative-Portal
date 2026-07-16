@@ -530,6 +530,94 @@
   </div>
 </div>
 
+<!-- ── EDIT MEMBER MODAL ─────────────────────────────────────────────────── -->
+<div class="modal-backdrop-coop" id="editMemberModal" style="display:none">
+  <div class="modal-box" style="max-width:700px">
+    <div class="modal-header-coop">
+      <span style="font-size:22px">✏️</span>
+      <div class="modal-title-coop">Edit Member Profile</div>
+      <button class="modal-close" onclick="COOP.modal.close('editMemberModal')">✕</button>
+    </div>
+    <div class="modal-body-coop" style="max-height:70vh;overflow-y:auto">
+      <form id="editMemberForm">
+        <input type="hidden" id="edit_memberId" name="memberId">
+        <h4 style="margin:0 0 16px 0;font-size:14px;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:8px">1. Personal Information</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div class="form-group">
+            <label class="form-label">Full Name *</label>
+            <input type="text" id="edit_fullName" name="fullName" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address *</label>
+            <input type="email" id="edit_email" name="email" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number *</label>
+            <input type="text" id="edit_phone" name="phone" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Alt Phone</label>
+            <input type="text" id="edit_altPhone" name="altPhone" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gender *</label>
+            <select id="edit_gender" name="gender" class="form-control form-select" required>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date of Birth *</label>
+            <input type="date" id="edit_dob" name="dateOfBirth" class="form-control" required>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:24px">
+          <label class="form-label">Residential Address *</label>
+          <input type="text" id="edit_address" name="residentialAddress" class="form-control" required>
+        </div>
+
+        <h4 style="margin:0 0 16px 0;font-size:14px;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:8px">2. Employment</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
+          <div class="form-group">
+            <label class="form-label">Occupation *</label>
+            <input type="text" id="edit_occupation" name="occupation" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Employer</label>
+            <input type="text" id="edit_employer" name="employer" class="form-control">
+          </div>
+        </div>
+
+        <h4 style="margin:0 0 16px 0;font-size:14px;color:var(--primary);border-bottom:1px solid var(--border);padding-bottom:8px">3. Next of Kin</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div class="form-group">
+            <label class="form-label">Full Name *</label>
+            <input type="text" id="edit_nok_name" name="nokName" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Relationship *</label>
+            <input type="text" id="edit_nok_rel" name="nokRel" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number *</label>
+            <input type="text" id="edit_nok_phone" name="nokPhone" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Address *</label>
+            <input type="text" id="edit_nok_address" name="nokAddress" class="form-control" required>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer-coop">
+      <button class="btn-outline-coop" onclick="COOP.modal.close('editMemberModal')">Cancel</button>
+      <button class="btn-primary-coop" id="submitEditMemberBtn" onclick="submitEditMember()">
+        💾 Save Changes
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ── RECORD CONTRIBUTION MODAL ─────────────────────────────────────────── -->
 <div class="modal-backdrop-coop" id="addContribModal" style="display:none">
   <div class="modal-box" style="max-width:520px">
@@ -1849,7 +1937,74 @@
     // Wait for the page to render then open the modal
     setTimeout(function() { openMemberRegModal(); }, 100);
   }
-  function openEditMemberModal(memberId) { COOP.toast.info('Edit member ' + memberId + ' — form coming soon.'); }
+  function openEditMemberModal(memberId) { 
+    COOP.loader.show('Loading profile...');
+    COOP.api('getMember', { memberId: memberId }, function(err, data) {
+      COOP.loader.hide();
+      if (err) { COOP.toast.error(err); return; }
+      var m = data;
+      document.getElementById('edit_memberId').value = m.memberNumber || m.id;
+      document.getElementById('edit_fullName').value = m.fullName || '';
+      document.getElementById('edit_email').value = m.email || '';
+      document.getElementById('edit_phone').value = m.phone || '';
+      document.getElementById('edit_altPhone').value = m.altPhone || '';
+      document.getElementById('edit_gender').value = m.gender || 'Male';
+      document.getElementById('edit_dob').value = m.dateOfBirth || '';
+      document.getElementById('edit_address').value = m.residentialAddress || '';
+      document.getElementById('edit_occupation').value = m.occupation || '';
+      document.getElementById('edit_employer').value = m.employer || '';
+      if (m.nextOfKin) {
+        document.getElementById('edit_nok_name').value = m.nextOfKin.name || '';
+        document.getElementById('edit_nok_rel').value = m.nextOfKin.relationship || '';
+        document.getElementById('edit_nok_phone').value = m.nextOfKin.phone || '';
+        document.getElementById('edit_nok_address').value = m.nextOfKin.address || '';
+      } else {
+        document.getElementById('edit_nok_name').value = '';
+        document.getElementById('edit_nok_rel').value = '';
+        document.getElementById('edit_nok_phone').value = '';
+        document.getElementById('edit_nok_address').value = '';
+      }
+      COOP.modal.open('editMemberModal');
+    });
+  }
+
+  function submitEditMember() {
+    var form = document.getElementById('editMemberForm');
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+    var payload = {
+      memberId: document.getElementById('edit_memberId').value,
+      fullName: document.getElementById('edit_fullName').value.trim(),
+      email: document.getElementById('edit_email').value.trim(),
+      phone: document.getElementById('edit_phone').value.trim(),
+      altPhone: document.getElementById('edit_altPhone').value.trim(),
+      gender: document.getElementById('edit_gender').value,
+      dateOfBirth: document.getElementById('edit_dob').value,
+      residentialAddress: document.getElementById('edit_address').value.trim(),
+      occupation: document.getElementById('edit_occupation').value.trim(),
+      employer: document.getElementById('edit_employer').value.trim(),
+      nextOfKin: {
+        name: document.getElementById('edit_nok_name').value.trim(),
+        relationship: document.getElementById('edit_nok_rel').value.trim(),
+        phone: document.getElementById('edit_nok_phone').value.trim(),
+        address: document.getElementById('edit_nok_address').value.trim()
+      }
+    };
+    
+    var btn = document.getElementById('submitEditMemberBtn');
+    btn.disabled = true;
+    COOP.loader.show('Saving changes...');
+    COOP.api('updateMember', payload, function(err, res) {
+      btn.disabled = false;
+      COOP.loader.hide();
+      if (err) { COOP.toast.error(err); return; }
+      COOP.toast.success('Profile updated successfully.');
+      COOP.modal.close('editMemberModal');
+      loadMembers(1); // Refresh table
+    });
+  }
 
   // ── Contribution Modal ───────────────────────────────────────────────────
   function openAddContribModal() {
