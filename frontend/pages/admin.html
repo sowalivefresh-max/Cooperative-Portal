@@ -2069,17 +2069,29 @@
   // ── Impersonation ─────────────────────────────────────────────────────────
   function impersonateUser(userId) {
     if (!confirm('Are you sure you want to impersonate this user?')) return;
+    
+    // Open a blank tab synchronously to prevent popup blockers
+    var impWindow = window.open('about:blank', '_blank');
+    if (!impWindow) {
+      COOP.toast.warning('Popup blocked. Please allow popups for this site.');
+      return;
+    }
+    
     COOP.api('impersonateUser', { targetUserId: userId }, function(err, data) {
-      if (err) { COOP.toast.error(err); return; }
+      if (err) { 
+        impWindow.close();
+        COOP.toast.error(err); 
+        return; 
+      }
       // Set pending impersonation flags with a unique ID for the new tab
       var impId = Date.now().toString() + Math.random().toString().substring(2, 6);
       localStorage.setItem('impToken_' + impId, data.token);
       localStorage.setItem('impUser_' + impId, JSON.stringify(data.user));
       
-      // Open frontend in new tab on the correct dashboard for their role
+      // Redirect the already-opened tab to the correct dashboard
       var currentUrl = window.location.href.split('?')[0];
       var newUrl = currentUrl.replace('admin.html', data.user.role + '.html') + '?imp_session=' + impId;
-      window.open(newUrl, '_blank');
+      impWindow.location.href = newUrl;
       
       COOP.toast.success('Opened ' + data.user.fullName + ' in a new tab.');
     });
