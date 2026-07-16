@@ -2071,13 +2071,16 @@
     if (!confirm('Are you sure you want to impersonate this user?')) return;
     COOP.api('impersonateUser', { targetUserId: userId }, function(err, data) {
       if (err) { COOP.toast.error(err); return; }
-      // Save current token to original
-      var currentToken = localStorage.getItem('coopToken');
-      if (currentToken) localStorage.setItem('coopOriginalToken', currentToken);
-      localStorage.setItem('coopToken', data.token);
-      localStorage.setItem('coopUser', JSON.stringify(data.user));
-      COOP.toast.success('Impersonating ' + data.user.fullName);
-      setTimeout(function() { window.location.reload(); }, 1000);
+      
+      // Set pending impersonation flags for the new tab
+      localStorage.setItem('pendingImpersonationToken', data.token);
+      localStorage.setItem('pendingImpersonationUser', JSON.stringify(data.user));
+      
+      // Open frontend in new tab
+      var portalUrl = window.location.href.split('?')[0]; // Current base URL
+      window.open(portalUrl, '_blank');
+      
+      COOP.toast.success('Opened ' + data.user.fullName + ' in a new tab.');
     });
   }
 

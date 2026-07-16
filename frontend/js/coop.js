@@ -8,8 +8,17 @@
 
 var COOP = window.COOP || {};
 
-COOP.token = localStorage.getItem('coopToken') || '';
-COOP.user = JSON.parse(localStorage.getItem('coopUser') || 'null');
+// Check if we are starting a new impersonated tab
+if (localStorage.getItem('pendingImpersonationToken')) {
+  sessionStorage.setItem('coopToken', localStorage.getItem('pendingImpersonationToken'));
+  sessionStorage.setItem('coopUser', localStorage.getItem('pendingImpersonationUser'));
+  sessionStorage.setItem('isImpersonating', 'true');
+  localStorage.removeItem('pendingImpersonationToken');
+  localStorage.removeItem('pendingImpersonationUser');
+}
+
+COOP.token = sessionStorage.getItem('coopToken') || localStorage.getItem('coopToken') || '';
+COOP.user = JSON.parse(sessionStorage.getItem('coopUser') || localStorage.getItem('coopUser') || 'null');
 COOP.theme = localStorage.getItem('coopTheme') || 'light';
 
 /**
@@ -73,15 +82,26 @@ COOP.apiAsync = function (action, data) {
 COOP.saveSession = function (token, user) {
   COOP.token = token;
   COOP.user = user;
-  localStorage.setItem('coopToken', token);
-  localStorage.setItem('coopUser', JSON.stringify(user));
+  if (sessionStorage.getItem('isImpersonating')) {
+    sessionStorage.setItem('coopToken', token);
+    sessionStorage.setItem('coopUser', JSON.stringify(user));
+  } else {
+    localStorage.setItem('coopToken', token);
+    localStorage.setItem('coopUser', JSON.stringify(user));
+  }
 };
 
 COOP.clearSession = function () {
   COOP.token = '';
   COOP.user = null;
-  localStorage.removeItem('coopToken');
-  localStorage.removeItem('coopUser');
+  if (sessionStorage.getItem('isImpersonating')) {
+    sessionStorage.removeItem('coopToken');
+    sessionStorage.removeItem('coopUser');
+    sessionStorage.removeItem('isImpersonating');
+  } else {
+    localStorage.removeItem('coopToken');
+    localStorage.removeItem('coopUser');
+  }
 };
 
 COOP.isLoggedIn = function () {
@@ -632,7 +652,7 @@ COOP.guardPage = function (allowedRoles, onSuccess) {
       onSuccess(user);
       
       // Impersonation Banner Logic
-      if (localStorage.getItem('coopOriginalToken')) {
+      if (sessionStorage.getItem('isImpersonating') || localStorage.getItem('coopOriginalToken')) {
         var banner = document.createElement('div');
         banner.style.position = 'fixed';
         banner.style.top = '0';
@@ -657,12 +677,21 @@ COOP.guardPage = function (allowedRoles, onSuccess) {
 };
 
 COOP.endImpersonation = function() {
-  var originalToken = localStorage.getItem('coopOriginalToken');
-  if (originalToken) {
-    localStorage.setItem('coopToken', originalToken);
-    localStorage.removeItem('coopOriginalToken');
-    // We assume the admin dashboard URL or simply redirecting to root works
-    window.location.href = COOP.getAppUrl() ? COOP.getAppUrl() + '?page=admin' : '/?page=admin';
+  if (sessionStorage.getItem('isImpersonating')) {
+    sessionStorage.removeItem('isImpersonating');
+    sessionStorage.removeItem('coopToken');
+    sessionStorage.removeItem('coopUser');
+    window.close(); // Attempt to close the new tab
+    // Fallback if browser blocks window.close()
+    setTimeout(function() { window.location.href = '/'; }, 500);
+  } else {
+    var originalToken = localStorage.getItem('coopOriginalToken');
+    if (originalToken) {
+      localStorage.setItem('coopToken', originalToken);
+      localStorage.removeItem('coopOriginalToken');
+      // We assume the admin dashboard URL or simply redirecting to root works
+      window.location.href = COOP.getAppUrl() ? COOP.getAppUrl() + '?page=admin' : '/?page=admin';
+    }
   }
 };
 
