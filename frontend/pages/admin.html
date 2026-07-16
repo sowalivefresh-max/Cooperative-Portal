@@ -1699,7 +1699,7 @@
           '<button class="btn-outline-coop" style="font-size:11px;padding:3px 7px" onclick="resetUserPw(\'' + u._id + '\')">🔑 Reset PW</button>' +
           '<button class="btn-outline-coop" style="font-size:11px;padding:3px 7px;margin-left:5px" onclick="openSetManualPassword(\'' + u._id + '\')">✏️ Set PW</button>' +
           (u.lockedUntil ? '<button style="font-size:11px;padding:3px 7px;background:var(--success-pale);color:var(--success);border:1px solid var(--success);border-radius:6px;cursor:pointer" onclick="unlockUser(\'' + u._id + '\')">🔓 Unlock</button>' : '') +
-          (u.role !== 'developer' ? '<button class="btn-outline-coop" style="font-size:11px;padding:3px 7px" onclick="impersonateUser(\'' + u._id + '\')">🎭 Impersonate</button>' : '') +
+          (COOP.user.role === 'super_admin' && u.role !== 'developer' ? '<button class="btn-outline-coop" style="font-size:11px;padding:3px 7px" onclick="impersonateUser(\'' + u._id + '\')">🎭 Impersonate</button>' : '') +
           '</div></td></tr>';
       }).join('');
     });

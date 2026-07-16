@@ -506,33 +506,21 @@ function impersonateUser(params) {
       return errorResponse('Cannot impersonate a developer account.', 403);
     }
 
-    // Generate a fresh token for the target user
-    var newToken = generateToken_();
-    var expires = new Date();
-    expires.setHours(expires.getHours() + 12);
+    // Generate a fresh session for the target user using standard helper
+    var newToken = createSession_(targetUser, false);
 
-    var targetSessionData = {
-      token: newToken,
-      userId: targetUser.userId,
-      role: targetUser.role,
-      memberId: targetUser.memberId || null,
-      expiresAt: expires.toISOString(),
-      createdAt: new Date().toISOString()
-    };
-    firestoreCreate_('sessions', targetSessionData, newToken);
-
-    logAction_('IMPERSONATE_USER', 'Auth', session.userId, targetUser.userId, null, { targetRole: targetUser.role });
+    logAction_('IMPERSONATE_USER', 'Auth', session.userId, targetUser._id, null, { targetRole: targetUser.role });
     
     return successResponse({ 
       token: newToken, 
       user: {
-        userId: targetUser.userId,
-        fullName: targetUser.fullName,
+        userId: targetUser._id,
         email: targetUser.email,
         role: targetUser.role,
+        fullName: targetUser.fullName || targetUser.email,
         memberId: targetUser.memberId || null
       }
-    }, 'Impersonation successful.');
+    }, 'Impersonating ' + (targetUser.fullName || targetUser.email));
   } catch (e) {
     logError('Auth', 'impersonateUser', e);
     return errorResponse('Impersonation failed.', 500);
