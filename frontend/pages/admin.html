@@ -1044,7 +1044,11 @@
     COOP.api('getAuditLogs', { page: 1, pageSize: 10 }, function(err, data) {
       var tbody = document.getElementById('dashboardAuditTbody');
       if (!tbody) return;
-      if (err || !data || data.total === 0) { 
+      if (err) {
+        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--danger)">Error: ' + COOP.escHtml(err) + '</td></tr>';
+        return;
+      }
+      if (!data || data.total === 0) { 
         tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state-icon">🛡️</div><div>No recent activity</div></div></td></tr>'; 
         return; 
       }
