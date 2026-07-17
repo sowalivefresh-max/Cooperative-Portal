@@ -320,6 +320,27 @@
           </div>
         </div>
       </div>
+
+      <!-- Recent Audit Log Row -->
+      <div class="card" style="margin-top: 20px;">
+        <div class="card-header">
+          <span class="card-title">🛡️ Recent Audit Logs</span>
+          <button class="btn-outline-coop" style="font-size:12px;padding:5px 10px"
+                  onclick="showPage('auditlog')">View Full Log</button>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div class="table-responsive">
+            <table class="coop-table">
+              <thead><tr>
+                <th>Timestamp</th><th>Actor</th><th>Action</th><th>Module</th>
+              </tr></thead>
+              <tbody id="dashboardAuditTbody">
+                <tr><td colspan="4" class="empty-state"><div class="empty-state-icon">🛡️</div>Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ── OTHER PAGES (lazy-loaded) ──────────────────────────── -->
@@ -1015,6 +1036,24 @@
       loadLoanCharts();
       loadTopContribChart();
       loadPendingLoans();
+      loadDashboardAuditLog();
+    });
+  }
+
+  function loadDashboardAuditLog() {
+    COOP.api('getAuditLogs', { page: 1, pageSize: 10 }, function(err, data) {
+      var tbody = document.getElementById('dashboardAuditTbody');
+      if (!tbody) return;
+      if (err || !data || data.total === 0) { 
+        tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-state-icon">🛡️</div><div>No recent activity</div></div></td></tr>'; 
+        return; 
+      }
+      tbody.innerHTML = data.data.map(function(l) {
+        return '<tr><td style="font-size:12px">' + COOP.fmt.datetime(l.timestamp) + '</td>' +
+          '<td>' + COOP.escHtml(l.actorName || l.actorId || 'system') + '</td>' +
+          '<td><code style="font-size:11px;background:var(--bg-secondary);padding:2px 6px;border-radius:4px">' + COOP.escHtml(l.action) + '</code></td>' +
+          '<td>' + COOP.escHtml(l.module) + '</td></tr>';
+      }).join('');
     });
   }
 
