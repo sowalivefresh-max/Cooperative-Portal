@@ -112,7 +112,7 @@ function getAuditLogs(params) {
     return successResponse(paginate(logs, params.page, params.pageSize || 50));
   } catch (e) {
     logError('AuditLog', 'getAuditLogs', e);
-    return errorResponse('Failed to retrieve audit logs.', 500);
+    return errorResponse('Failed to retrieve audit logs: ' + e.message, 500);
   }
 }
 
