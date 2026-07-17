@@ -213,6 +213,9 @@ function getCurrentUser(params) {
       }
     }
 
+    // Log the visit to the portal for audit purposes
+    logAction_('PORTAL_VISIT', 'Auth', user._id, null, null, { role: user.role });
+
     return successResponse(result);
   } catch (e) {
     logError('Auth', 'getCurrentUser', e);
