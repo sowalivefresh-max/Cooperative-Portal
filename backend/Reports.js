@@ -67,7 +67,7 @@ function getFinancialSummary(params) {
     });
   } catch (e) {
     logError('Reports', 'getFinancialSummary', e);
-    return errorResponse('Failed to retrieve financial summary: ' + e.message, 500);
+    return errorResponse('Failed to retrieve financial summary.', 500);
   }
 }
 

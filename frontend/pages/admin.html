@@ -1013,7 +1013,11 @@
     COOP.loader.show('Loading dashboard…');
     COOP.api('getFinancialSummary', {}, function(err, data) {
       COOP.loader.hide();
-      if (err) { COOP.toast.error('Failed to load dashboard: ' + err); return; }
+      if (err) {
+        COOP.toast.error('Dashboard error: ' + err);
+        document.getElementById('dashboardStats').innerHTML = '<div style="grid-column:1/-1;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:16px;color:#856404"><strong>⚠️ Dashboard failed to load.</strong><br><code style="font-size:12px">' + String(err) + '</code><br><br>This usually means the Google Apps Script deployment needs to be redeployed as a New Version. Go to Apps Script → Deploy → Manage Deployments → Edit (pencil) → select <strong>New Version</strong> → Deploy.</div>';
+        return;
+      }
       if (!data) return;
       var o = data.overview || {};
       document.getElementById('statTotalMembers').textContent  = COOP.fmt.number(o.totalMembers);

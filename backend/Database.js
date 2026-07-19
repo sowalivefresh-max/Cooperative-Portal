@@ -145,10 +145,7 @@ function firestoreGetAll_(collection, limit) {
       headers: { 'Authorization': 'Bearer ' + getFirestoreToken_() },
       muteHttpExceptions: true
     });
-    if (response.getResponseCode() !== 200) {
-      logError('Database', 'firestoreGetAll_', 'HTTP ' + response.getResponseCode() + ' on ' + collection + ': ' + response.getContentText());
-      return [];
-    }
+    if (response.getResponseCode() !== 200) return [];
     var raw = JSON.parse(response.getContentText());
     if (!raw.documents) return [];
     return raw.documents.map(parseFirestoreDoc_);
