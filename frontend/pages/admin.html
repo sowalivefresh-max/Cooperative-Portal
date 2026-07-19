@@ -1808,7 +1808,8 @@
     COOP.api('getAuditLogs', { page: page, pageSize: 20 }, function(err, data) {
       var tbody = document.getElementById('auditTbody');
       if (!tbody) return;
-      if (err) { tbody.innerHTML = '<tr><td colspan="5" style="color:red">Error: ' + err + '</td></tr>'; return; }`r`n      if (!data || data.total === 0) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">🔍</div><div>No audit records</div></div></td></tr>'; return; }
+      if (err) { tbody.innerHTML = '<tr><td colspan="5" style="color:red">Error: ' + err + '</td></tr>'; return; }
+      if (!data || data.total === 0) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">🔍</div><div>No audit records</div></div></td></tr>'; return; }
       tbody.innerHTML = data.data.map(function(l) {
         return '<tr><td style="font-size:12px">' + COOP.fmt.datetime(l.timestamp) + '</td>' +
           '<td>' + COOP.escHtml(l.actorName || l.actorId || 'system') + '</td>' +
