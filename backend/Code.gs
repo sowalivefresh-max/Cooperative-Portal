@@ -398,8 +398,95 @@ function triggerBirthdayNotifications() {
  */
 function diagnosticCheck() {
   Logger.log('========================================');
-  Logger.log('COOPERATIVE PORTAL — DIAGNOSTIC CHECK');
+  Logger.log('COOPERATIVE PORTAL — DIAGNOSTIC CHECK v2');
   Logger.log('========================================');
+
+  // 1. Maintenance Mode (THIS IS THE #1 SUSPECT)
+  Logger.log('\n--- [1] MAINTENANCE MODE CHECK ---');
+  try {
+    var maintenanceDoc = firestoreGet_('systemSettings', 'maintenanceMode');
+    var maintenanceValue = maintenanceDoc ? maintenanceDoc.value : null;
+    Logger.log('maintenanceMode in Firestore: ' + JSON.stringify(maintenanceValue));
+    if (maintenanceValue === true) {
+      Logger.log('!!! MAINTENANCE MODE IS ON !!! This blocks ALL users except developers from using getFinancialSummary, getAuditLogs, and all other API calls. This IS the problem.');
+      Logger.log('FIX: Set maintenanceMode to false in Firestore, or run the fixMaintenanceMode() function below.');
+    } else {
+      Logger.log('Maintenance mode is OFF (or not set). Not the issue.');
+    }
+  } catch (e) {
+    Logger.log('Error checking maintenance mode: ' + e.message);
+  }
+
+  // 2. All systemSettings docs
+  Logger.log('\n--- [2] System Settings (all) ---');
+  try {
+    var allSettings = firestoreGetAll_('systemSettings');
+    Logger.log('Total settings docs: ' + allSettings.length);
+    allSettings.forEach(function(s) {
+      Logger.log('  ' + (s.settingKey || s._id) + ' = ' + JSON.stringify(s.value));
+    });
+  } catch (e) {
+    Logger.log('Error: ' + e.message);
+  }
+
+  // 3. Direct getFinancialSummary simulation (no auth)
+  Logger.log('\n--- [3] getFinancialSummary Direct Test ---');
+  try {
+    var members     = firestoreGetAll_('members');
+    var allSavings  = firestoreGetAll_('savings');
+    var allLoans    = firestoreGetAll_('loans');
+    var allContribs = firestoreGetAll_('contributions');
+    var allRepay    = firestoreGetAll_('loanRepayments');
+    var totalMembers = members.filter(function(m) { return m.status !== 'Deleted'; }).length;
+    var activeMembers = members.filter(function(m) { return m.status === 'Active'; }).length;
+    var totalSavings = allSavings.reduce(function(s, x) { return s + (x.currentBalance || 0); }, 0);
+    var totalContrib = allContribs.reduce(function(s, c) { return s + (c.amount || 0); }, 0);
+    Logger.log('totalMembers: '  + totalMembers);
+    Logger.log('activeMembers: ' + activeMembers);
+    Logger.log('totalSavings: '  + totalSavings);
+    Logger.log('totalContrib: '  + totalContrib);
+    Logger.log('Member statuses: ' + members.map(function(m){ return m.status; }).join(', '));
+    Logger.log('getFinancialSummary would return SUCCESS with this data.');
+  } catch (e) {
+    Logger.log('getFinancialSummary simulation FAILED: ' + e.message);
+  }
+
+  // 4. Most recent valid session
+  Logger.log('\n--- [4] Current Valid Sessions ---');
+  try {
+    var sessions = firestoreGetAll_('sessions');
+    var now = new Date();
+    var valid = sessions.filter(function(s) { return s.expiresAt && new Date(s.expiresAt) > now; });
+    Logger.log('Total sessions: ' + sessions.length + ' | Valid (not expired): ' + valid.length);
+    valid.forEach(function(s) {
+      Logger.log('  VALID -> ' + s.email + ' | ' + s.role + ' | expires: ' + s.expiresAt);
+    });
+  } catch (e) {
+    Logger.log('Error: ' + e.message);
+  }
+
+  Logger.log('\n========================================');
+  Logger.log('DIAGNOSTIC v2 COMPLETE');
+  Logger.log('========================================');
+}
+
+/**
+ * Run this if maintenanceMode is ON to turn it off immediately.
+ */
+function fixMaintenanceMode() {
+  try {
+    var existing = firestoreGet_('systemSettings', 'maintenanceMode');
+    if (existing) {
+      firestoreUpdate_('systemSettings', 'maintenanceMode', { value: false, updatedAt: new Date().toISOString() });
+    } else {
+      firestoreCreate_('systemSettings', { settingKey: 'maintenanceMode', value: false, updatedAt: new Date().toISOString() }, 'maintenanceMode');
+    }
+    Logger.log('SUCCESS: maintenanceMode has been set to FALSE. Dashboard should now load.');
+  } catch (e) {
+    Logger.log('ERROR: ' + e.message);
+  }
+}
+
 
   // 1. Script Properties
   Logger.log('\n--- [1] Script Properties ---');
