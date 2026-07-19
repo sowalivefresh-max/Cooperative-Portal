@@ -333,7 +333,7 @@ function forceResetDeveloper() {
   var newPassword = 'Dev@Portal2026!';
   
   firestoreUpdate_('users', dev._id, {
-    email: 'faith4grtns@gmail.com', // Change to user's real email so password resets work
+    email: 'faith4grtns@gmail.com',
     passwordHash: hashPassword(newPassword),
     requirePasswordChange: false,
     failedLoginAttempts: 0,
@@ -389,39 +389,38 @@ function triggerBirthdayNotifications() {
   sendBirthdayNotifications({ _systemTrigger: true });
 }
 
-// ─── DIAGNOSTIC TOOL ──────────────────────────────────────────────────────────
+// ─── DIAGNOSTIC TOOLS ─────────────────────────────────────────────────────────
 
 /**
- * Run this function directly from the Apps Script Editor (no deployment needed).
- * Select "diagnosticCheck" from the function dropdown at the top, then click ▶ Run.
- * Check the Execution Log (View > Logs) for the full diagnosis.
+ * Run this from the Apps Script editor to diagnose dashboard loading problems.
+ * Select "diagnosticCheck" from the function dropdown, then click Run.
+ * View results in Execution Log (View > Logs).
  */
 function diagnosticCheck() {
   Logger.log('========================================');
-  Logger.log('COOPERATIVE PORTAL — DIAGNOSTIC CHECK v2');
+  Logger.log('COOPERATIVE PORTAL — DIAGNOSTIC CHECK');
   Logger.log('========================================');
 
-  // 1. Maintenance Mode (THIS IS THE #1 SUSPECT)
+  // 1. Maintenance Mode — #1 suspect when login works but dashboard doesn't
   Logger.log('\n--- [1] MAINTENANCE MODE CHECK ---');
   try {
     var maintenanceDoc = firestoreGet_('systemSettings', 'maintenanceMode');
     var maintenanceValue = maintenanceDoc ? maintenanceDoc.value : null;
-    Logger.log('maintenanceMode in Firestore: ' + JSON.stringify(maintenanceValue));
+    Logger.log('maintenanceMode value: ' + JSON.stringify(maintenanceValue));
     if (maintenanceValue === true) {
-      Logger.log('!!! MAINTENANCE MODE IS ON !!! This blocks ALL users except developers from using getFinancialSummary, getAuditLogs, and all other API calls. This IS the problem.');
-      Logger.log('FIX: Set maintenanceMode to false in Firestore, or run the fixMaintenanceMode() function below.');
+      Logger.log('*** MAINTENANCE MODE IS ON! This blocks getFinancialSummary, getAuditLogs, etc. for non-developers. Run fixMaintenanceMode() to fix it. ***');
     } else {
-      Logger.log('Maintenance mode is OFF (or not set). Not the issue.');
+      Logger.log('Maintenance mode is OFF. Not the issue.');
     }
   } catch (e) {
     Logger.log('Error checking maintenance mode: ' + e.message);
   }
 
-  // 2. All systemSettings docs
-  Logger.log('\n--- [2] System Settings (all) ---');
+  // 2. All systemSettings values
+  Logger.log('\n--- [2] All System Settings ---');
   try {
     var allSettings = firestoreGetAll_('systemSettings');
-    Logger.log('Total settings docs: ' + allSettings.length);
+    Logger.log('Total settings: ' + allSettings.length);
     allSettings.forEach(function(s) {
       Logger.log('  ' + (s.settingKey || s._id) + ' = ' + JSON.stringify(s.value));
     });
@@ -429,141 +428,72 @@ function diagnosticCheck() {
     Logger.log('Error: ' + e.message);
   }
 
-  // 3. Direct getFinancialSummary simulation (no auth)
-  Logger.log('\n--- [3] getFinancialSummary Direct Test ---');
+  // 3. getFinancialSummary logic (bypasses auth)
+  Logger.log('\n--- [3] getFinancialSummary Simulation ---');
   try {
     var members     = firestoreGetAll_('members');
     var allSavings  = firestoreGetAll_('savings');
     var allLoans    = firestoreGetAll_('loans');
     var allContribs = firestoreGetAll_('contributions');
     var allRepay    = firestoreGetAll_('loanRepayments');
-    var totalMembers = members.filter(function(m) { return m.status !== 'Deleted'; }).length;
+    var totalMembers  = members.filter(function(m) { return m.status !== 'Deleted'; }).length;
     var activeMembers = members.filter(function(m) { return m.status === 'Active'; }).length;
-    var totalSavings = allSavings.reduce(function(s, x) { return s + (x.currentBalance || 0); }, 0);
-    var totalContrib = allContribs.reduce(function(s, c) { return s + (c.amount || 0); }, 0);
-    Logger.log('totalMembers: '  + totalMembers);
+    var totalSavings  = allSavings.reduce(function(s, x) { return s + (x.currentBalance || 0); }, 0);
+    var totalContrib  = allContribs.reduce(function(s, c) { return s + (c.amount || 0); }, 0);
+    Logger.log('totalMembers:  ' + totalMembers);
     Logger.log('activeMembers: ' + activeMembers);
-    Logger.log('totalSavings: '  + totalSavings);
-    Logger.log('totalContrib: '  + totalContrib);
-    Logger.log('Member statuses: ' + members.map(function(m){ return m.status; }).join(', '));
-    Logger.log('getFinancialSummary would return SUCCESS with this data.');
+    Logger.log('totalSavings:  ' + totalSavings);
+    Logger.log('totalContrib:  ' + totalContrib);
+    Logger.log('Member statuses: ' + members.map(function(m) { return m.status; }).join(', '));
+    Logger.log('Result: getFinancialSummary would SUCCEED with this data.');
   } catch (e) {
     Logger.log('getFinancialSummary simulation FAILED: ' + e.message);
   }
 
-  // 4. Most recent valid session
-  Logger.log('\n--- [4] Current Valid Sessions ---');
+  // 4. Valid sessions right now
+  Logger.log('\n--- [4] Currently Valid Sessions ---');
   try {
     var sessions = firestoreGetAll_('sessions');
     var now = new Date();
-    var valid = sessions.filter(function(s) { return s.expiresAt && new Date(s.expiresAt) > now; });
-    Logger.log('Total sessions: ' + sessions.length + ' | Valid (not expired): ' + valid.length);
+    var valid = sessions.filter(function(s) {
+      return s.expiresAt && new Date(s.expiresAt) > now;
+    });
+    Logger.log('Total sessions in DB: ' + sessions.length + ' | Valid now: ' + valid.length);
     valid.forEach(function(s) {
-      Logger.log('  VALID -> ' + s.email + ' | ' + s.role + ' | expires: ' + s.expiresAt);
+      Logger.log('  VALID -> ' + s.email + ' | role: ' + s.role + ' | expires: ' + s.expiresAt);
     });
   } catch (e) {
     Logger.log('Error: ' + e.message);
   }
 
   Logger.log('\n========================================');
-  Logger.log('DIAGNOSTIC v2 COMPLETE');
+  Logger.log('DIAGNOSTIC COMPLETE');
   Logger.log('========================================');
 }
 
 /**
- * Run this if maintenanceMode is ON to turn it off immediately.
+ * Run this function if diagnosticCheck shows maintenanceMode = true.
+ * It will immediately disable maintenance mode so the dashboard loads.
+ * No deployment needed — runs directly from the editor.
  */
 function fixMaintenanceMode() {
   try {
     var existing = firestoreGet_('systemSettings', 'maintenanceMode');
     if (existing) {
-      firestoreUpdate_('systemSettings', 'maintenanceMode', { value: false, updatedAt: new Date().toISOString() });
+      firestoreUpdate_('systemSettings', 'maintenanceMode', {
+        value: false,
+        updatedAt: new Date().toISOString()
+      });
     } else {
-      firestoreCreate_('systemSettings', { settingKey: 'maintenanceMode', value: false, updatedAt: new Date().toISOString() }, 'maintenanceMode');
+      firestoreCreate_('systemSettings', {
+        settingKey: 'maintenanceMode',
+        value: false,
+        updatedAt: new Date().toISOString()
+      }, 'maintenanceMode');
     }
-    Logger.log('SUCCESS: maintenanceMode has been set to FALSE. Dashboard should now load.');
+    Logger.log('SUCCESS: maintenanceMode has been set to FALSE.');
+    Logger.log('Refresh the portal dashboard — it should now load correctly.');
   } catch (e) {
     Logger.log('ERROR: ' + e.message);
   }
-}
-
-
-  // 1. Script Properties
-  Logger.log('\n--- [1] Script Properties ---');
-  try {
-    var props = PropertiesService.getScriptProperties().getProperties();
-    var saSet = !!props['FIREBASE_SERVICE_ACCOUNT'];
-    var pidSet = !!props['FIREBASE_PROJECT_ID'];
-    var saltSet = !!props['PASSWORD_SALT'];
-    Logger.log('FIREBASE_SERVICE_ACCOUNT: ' + (saSet ? 'SET' : 'MISSING'));
-    Logger.log('FIREBASE_PROJECT_ID:      ' + (pidSet ? 'SET (' + props['FIREBASE_PROJECT_ID'] + ')' : 'MISSING'));
-    Logger.log('PASSWORD_SALT:            ' + (saltSet ? 'SET' : 'MISSING'));
-    if (!saSet) {
-      Logger.log('STOP: FIREBASE_SERVICE_ACCOUNT is not set. Go to Apps Script > Project Settings > Script Properties and add it.');
-      return;
-    }
-  } catch (e) {
-    Logger.log('ERROR reading script properties: ' + e.message);
-    return;
-  }
-
-  // 2. Firestore Token
-  Logger.log('\n--- [2] Firestore Token ---');
-  var token;
-  try {
-    token = getFirestoreToken_();
-    Logger.log('Token obtained OK (first 20 chars): ' + token.substring(0, 20) + '...');
-  } catch (e) {
-    Logger.log('FAILED to get Firestore token: ' + e.message);
-    return;
-  }
-
-  // 3. Firestore Connectivity
-  Logger.log('\n--- [3] Firestore Connectivity ---');
-  try {
-    var config = getFirebaseConfig_();
-    var url = config.baseUrl() + '/members?pageSize=1';
-    var resp = UrlFetchApp.fetch(url, {
-      method: 'GET',
-      headers: { 'Authorization': 'Bearer ' + token },
-      muteHttpExceptions: true
-    });
-    var code = resp.getResponseCode();
-    Logger.log('HTTP Response Code: ' + code);
-    if (code === 200) {
-      var raw = JSON.parse(resp.getContentText());
-      Logger.log('Firestore connected OK. Documents in members: ' + (raw.documents ? raw.documents.length : 0));
-    } else {
-      Logger.log('Firestore ERROR: ' + resp.getContentText());
-    }
-  } catch (e) {
-    Logger.log('Firestore fetch error: ' + e.message);
-  }
-
-  // 4. Collection Record Counts
-  Logger.log('\n--- [4] Collection Record Counts ---');
-  ['members', 'contributions', 'savings', 'loans', 'loanRepayments', 'auditLogs', 'sessions', 'users'].forEach(function(col) {
-    try {
-      var docs = firestoreGetAll_(col);
-      Logger.log(col + ': ' + docs.length + ' records');
-    } catch (e) {
-      Logger.log(col + ': ERROR - ' + e.message);
-    }
-  });
-
-  // 5. Active Sessions
-  Logger.log('\n--- [5] Active User Sessions ---');
-  try {
-    var sessions = firestoreGetAll_('sessions');
-    Logger.log('Active sessions: ' + sessions.length);
-    sessions.forEach(function(s) {
-      Logger.log('  -> ' + (s.email || '?') + ' | role: ' + (s.role || '?') + ' | expires: ' + (s.expiresAt || '?'));
-    });
-  } catch (e) {
-    Logger.log('ERROR reading sessions: ' + e.message);
-  }
-
-  Logger.log('\n========================================');
-  Logger.log('DIAGNOSTIC COMPLETE — Share these logs!');
-  Logger.log('========================================');
 }
