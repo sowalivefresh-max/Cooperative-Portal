@@ -389,3 +389,94 @@ function triggerBirthdayNotifications() {
   sendBirthdayNotifications({ _systemTrigger: true });
 }
 
+// ─── DIAGNOSTIC TOOL ──────────────────────────────────────────────────────────
+
+/**
+ * Run this function directly from the Apps Script Editor (no deployment needed).
+ * Select "diagnosticCheck" from the function dropdown at the top, then click ▶ Run.
+ * Check the Execution Log (View > Logs) for the full diagnosis.
+ */
+function diagnosticCheck() {
+  Logger.log('========================================');
+  Logger.log('COOPERATIVE PORTAL — DIAGNOSTIC CHECK');
+  Logger.log('========================================');
+
+  // 1. Script Properties
+  Logger.log('\n--- [1] Script Properties ---');
+  try {
+    var props = PropertiesService.getScriptProperties().getProperties();
+    var saSet = !!props['FIREBASE_SERVICE_ACCOUNT'];
+    var pidSet = !!props['FIREBASE_PROJECT_ID'];
+    var saltSet = !!props['PASSWORD_SALT'];
+    Logger.log('FIREBASE_SERVICE_ACCOUNT: ' + (saSet ? 'SET' : 'MISSING'));
+    Logger.log('FIREBASE_PROJECT_ID:      ' + (pidSet ? 'SET (' + props['FIREBASE_PROJECT_ID'] + ')' : 'MISSING'));
+    Logger.log('PASSWORD_SALT:            ' + (saltSet ? 'SET' : 'MISSING'));
+    if (!saSet) {
+      Logger.log('STOP: FIREBASE_SERVICE_ACCOUNT is not set. Go to Apps Script > Project Settings > Script Properties and add it.');
+      return;
+    }
+  } catch (e) {
+    Logger.log('ERROR reading script properties: ' + e.message);
+    return;
+  }
+
+  // 2. Firestore Token
+  Logger.log('\n--- [2] Firestore Token ---');
+  var token;
+  try {
+    token = getFirestoreToken_();
+    Logger.log('Token obtained OK (first 20 chars): ' + token.substring(0, 20) + '...');
+  } catch (e) {
+    Logger.log('FAILED to get Firestore token: ' + e.message);
+    return;
+  }
+
+  // 3. Firestore Connectivity
+  Logger.log('\n--- [3] Firestore Connectivity ---');
+  try {
+    var config = getFirebaseConfig_();
+    var url = config.baseUrl() + '/members?pageSize=1';
+    var resp = UrlFetchApp.fetch(url, {
+      method: 'GET',
+      headers: { 'Authorization': 'Bearer ' + token },
+      muteHttpExceptions: true
+    });
+    var code = resp.getResponseCode();
+    Logger.log('HTTP Response Code: ' + code);
+    if (code === 200) {
+      var raw = JSON.parse(resp.getContentText());
+      Logger.log('Firestore connected OK. Documents in members: ' + (raw.documents ? raw.documents.length : 0));
+    } else {
+      Logger.log('Firestore ERROR: ' + resp.getContentText());
+    }
+  } catch (e) {
+    Logger.log('Firestore fetch error: ' + e.message);
+  }
+
+  // 4. Collection Record Counts
+  Logger.log('\n--- [4] Collection Record Counts ---');
+  ['members', 'contributions', 'savings', 'loans', 'loanRepayments', 'auditLogs', 'sessions', 'users'].forEach(function(col) {
+    try {
+      var docs = firestoreGetAll_(col);
+      Logger.log(col + ': ' + docs.length + ' records');
+    } catch (e) {
+      Logger.log(col + ': ERROR - ' + e.message);
+    }
+  });
+
+  // 5. Active Sessions
+  Logger.log('\n--- [5] Active User Sessions ---');
+  try {
+    var sessions = firestoreGetAll_('sessions');
+    Logger.log('Active sessions: ' + sessions.length);
+    sessions.forEach(function(s) {
+      Logger.log('  -> ' + (s.email || '?') + ' | role: ' + (s.role || '?') + ' | expires: ' + (s.expiresAt || '?'));
+    });
+  } catch (e) {
+    Logger.log('ERROR reading sessions: ' + e.message);
+  }
+
+  Logger.log('\n========================================');
+  Logger.log('DIAGNOSTIC COMPLETE — Share these logs!');
+  Logger.log('========================================');
+}
